@@ -1,3 +1,10 @@
+import os
+import sys
+
+# Inject python paths for package resolution in Vercel
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
