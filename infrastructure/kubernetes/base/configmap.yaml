@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: deepstream-config
+  namespace: deepstream
+data:
+  kafka.brokers: "deepstream-kafka:9092"
+  redis.addr: "deepstream-redis:6379"
+  postgres.url: "postgresql+asyncpg://postgres:password@deepstream-postgres:5432/deepstream"
+  clickhouse.host: "deepstream-clickhouse"
+  clickhouse.port: "8123"
+  minio.endpoint: "deepstream-minio:9000"
+  minio.secure: "false"

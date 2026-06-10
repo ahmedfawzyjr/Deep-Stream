@@ -1,0 +1,54 @@
+apiVersion: litmuschaos.io/v1alpha1
+kind: ChaosEngine
+metadata:
+  name: deepstream-chaos
+  namespace: deepstream
+spec:
+  appinfo:
+    appns: 'deepstream'
+    applabel: 'app=inference-engine'
+    appkind: 'deployment'
+  
+  # Anti-gravity: prove the system survives failures
+  experiments:
+    - name: pod-delete
+      spec:
+        components:
+          env:
+            # Kill 1 random inference pod every 10 minutes
+            - name: TOTAL_CHAOS_DURATION
+              value: '600'
+            - name: CHAOS_INTERVAL
+              value: '600'
+            - name: FORCE
+              value: 'false'
+    
+    - name: network-latency
+      spec:
+        components:
+          env:
+            # Add 200ms latency to Kafka traffic
+            - name: TARGET_CONTAINER
+              value: 'gateway'
+            - name: NETWORK_INTERFACE
+              value: 'eth0'
+            - name: LIB_IMAGE
+              value: 'litmuschaos/go-runner:latest'
+            - name: TC_IMAGE
+              value: 'gaiadocker/iproute2'
+            - name: NETWORK_LATENCY
+              value: '200'
+            - name: TOTAL_CHAOS_DURATION
+              value: '300'
+    
+    - name: pod-cpu-hog
+      spec:
+        components:
+          env:
+            # Consume 80% CPU on API pods
+            - name: CPU_CORES
+              value: '2'
+            - name: TOTAL_CHAOS_DURATION
+              value: '300'
+            - name: TARGET_CONTAINER
+              value: 'api'

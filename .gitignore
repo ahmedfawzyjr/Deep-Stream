@@ -1,0 +1,26 @@
+# Build binaries/outputs
+target/
+dist/
+build/
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Dependencies
+node_modules/
+.venv/
+__pycache__/
+*.pyc
+
+# Local Configs
+.env
+.gemini/
+*.log
+
+# Databases / Storage files
+data/
+*.db
+*.onnx
+!models/README.md

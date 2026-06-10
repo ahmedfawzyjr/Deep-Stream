@@ -1,0 +1,30 @@
+name: CI - Go
+
+on:
+  push:
+    paths:
+      - 'gateway/**'
+      - 'proto/**'
+      - '.github/workflows/ci-go.yml'
+  pull_request:
+    paths:
+      - 'gateway/**'
+      - 'proto/**'
+
+jobs:
+  lint-and-test:
+    name: Go Lint and Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+
+      - name: Verify dependencies
+        run: cd gateway && go mod verify
+
+      - name: Run tests
+        run: cd gateway && go test -v ./...

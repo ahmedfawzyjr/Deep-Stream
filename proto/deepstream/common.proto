@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package deepstream.common;
+
+option go_package = "deepstream/gateway/pkg/proto/common";
+
+message Header {
+  string trace_id = 1;
+  int64 timestamp = 2;
+}
+
+message VideoFrame {
+  Header header = 1;
+  uint64 sequence = 2;
+  bytes data = 3; // JPEG/PNG or raw frame bytes
+  int32 width = 4;
+  int32 height = 5;
+}
+
+message AudioChunk {
+  Header header = 1;
+  uint64 sequence = 2;
+  bytes data = 3; // PCM or raw audio bytes
+  int32 sample_rate = 4;
+}
+
+message Detection {
+  string label = 1;
+  float confidence = 2;
+  repeated float bbox = 3; // [x, y, w, h]
+}

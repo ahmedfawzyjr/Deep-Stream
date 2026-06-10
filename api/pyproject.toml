@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "deepstream-api"
+version = "0.1.0"
+description = "DeepStream Results API"
+authors = ["Ahmed Fawzy <ahmedfawzyjr@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.100.0"
+uvicorn = {extras = ["standard"], version = "^0.22.0"}
+sqlalchemy = "^2.0.0"
+redis = "^4.6.0"
+pydantic = "^2.0"
+minio = "^7.1.15"
+asyncpg = "^0.28.0"
+clickhouse-connect = "^0.6.8"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

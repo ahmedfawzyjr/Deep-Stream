@@ -1,0 +1,32 @@
+name: CI - Python
+
+on:
+  push:
+    paths:
+      - 'api/**'
+      - '.github/workflows/ci-python.yml'
+  pull_request:
+    paths:
+      - 'api/**'
+
+jobs:
+  lint-and-test:
+    name: Python Lint and Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install poetry
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 -
+
+      - name: Install dependencies
+        run: cd api && poetry install
+
+      - name: Run Pytest
+        run: cd api && poetry run pytest

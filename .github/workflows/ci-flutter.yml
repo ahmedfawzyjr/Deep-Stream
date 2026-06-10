@@ -1,0 +1,31 @@
+name: CI Flutter (SDK)
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'sdk/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'sdk/**'
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Install dependencies
+        run: cd sdk && flutter pub get
+
+      - name: Run analyzer
+        run: cd sdk && flutter analyze
+
+      - name: Run unit tests
+        run: cd sdk && flutter test
