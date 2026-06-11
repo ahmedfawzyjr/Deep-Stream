@@ -1,0 +1,11 @@
+# Ignore backend directories for Vercel Frontend deployment
+api/
+inference/
+ml/
+features/
+data/
+mobile/
+infrastructure/
+scripts/
+notebooks/
+docs/
