@@ -8,6 +8,11 @@ bin/
 *.so
 *.dylib
 
+# Next.js build output
+.next/
+web/.next/
+out/
+
 # Dependencies
 node_modules/
 .venv/
