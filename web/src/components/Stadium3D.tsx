@@ -302,7 +302,7 @@ function Player({
       {/* Torso / Jersey */}
       <mesh position={[0, 0.7, 0]} castShadow>
         <boxGeometry args={[0.42, 0.65, 0.22]} />
-        <meshStandardMaterial color={isArg ? "#00e5ff" : "#38bdf8"} roughness={0.4} />
+        <meshStandardMaterial color={isArg ? "#00e5ff" : "#0e2b84"} roughness={0.4} />
       </mesh>
 
       {/* Head */}
