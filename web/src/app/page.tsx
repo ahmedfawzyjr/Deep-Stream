@@ -128,13 +128,12 @@ export default function Home() {
       {/* Premium Glassmorphic Header */}
       <header className="glass-panel" style={{ margin: '20px 28px', padding: '16px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <motion.span 
-            animate={{ rotate: [0, 360] }}
-            transition={{ repeat: Infinity, duration: 15, ease: "linear" }}
-            style={{ fontSize: '32px', cursor: 'default' }}
-          >
-            ⚽
-          </motion.span>
+          <motion.img 
+            src="/logo.png" 
+            alt="DeepKick Logo" 
+            whileHover={{ scale: 1.1, rotate: 10 }}
+            style={{ width: '38px', height: '38px', borderRadius: '8px', boxShadow: '0 0 10px rgba(0, 255, 135, 0.3)' }}
+          />
           <div>
             <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 800, letterSpacing: '-0.5px' }} className="gradient-text">
               DeepKick
