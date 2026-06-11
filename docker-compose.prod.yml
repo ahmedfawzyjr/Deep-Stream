@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # In production, services are typically orchestrated by K8s (GKE), but we keep this configuration for parity.
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: deepkick-api-prod
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+      - KAFKA_BROKERS=kafka:29092
+    depends_on:
+      - postgres
+      - redis
+      - kafka
+
+  inference:
+    build:
+      context: ./inference
+      dockerfile: Dockerfile
+    container_name: deepkick-inference-prod
+    environment:
+      - KAFKA_BROKERS=kafka:29092
+      - REDIS_HOST=redis
+    depends_on:
+      - kafka
+      - redis
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: deepkick-web-prod
+    ports:
+      - "80:80"
+    depends_on:
+      - api

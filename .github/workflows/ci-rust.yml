@@ -3,15 +3,11 @@ name: CI - Rust
 on:
   push:
     paths:
-      - 'crates/**'
-      - 'proto/**'
-      - 'Cargo.toml'
+      - 'inference/**'
       - '.github/workflows/ci-rust.yml'
   pull_request:
     paths:
-      - 'crates/**'
-      - 'proto/**'
-      - 'Cargo.toml'
+      - 'inference/**'
 
 env:
   CARGO_TERM_COLOR: always
@@ -20,6 +16,9 @@ jobs:
   lint:
     name: Lint & Format
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: inference
     steps:
       - uses: actions/checkout@v4
 
@@ -37,6 +36,9 @@ jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: inference
     steps:
       - uses: actions/checkout@v4
 
@@ -44,4 +46,5 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Run tests
-        run: cargo test --all-features --workspace
+        run: cargo test --all-features
+

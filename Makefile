@@ -1,10 +1,4 @@
-.PHONY: proto-gen dev-up dev-down test-all
-
-proto-gen:
-	@echo "Generating protobuf files..."
-	# Normally runs buf generate. If protobuf-compiler is installed, we can run it.
-	# For simplicity, we define command placeholders or direct instructions.
-	@echo "Done generating protobufs."
+.PHONY: dev-up dev-down test-all install-deps build-all
 
 dev-up:
 	docker-compose up -d
@@ -12,11 +6,25 @@ dev-up:
 dev-down:
 	docker-compose down
 
+install-deps:
+	@echo "Installing dependencies..."
+	cd ml && pip install -e .
+	cd api && go mod download
+	cd web && npm install
+
+build-all:
+	@echo "Building services..."
+	cd inference && cargo build --release
+	cd api && go build -o bin/server cmd/server/main.go
+	cd web && npm run build
+
 test-all:
 	@echo "Running tests across workspace..."
-	@echo "Go tests..."
-	cd gateway && go test ./... || true
-	@echo "Rust tests..."
-	cd crates && cargo test || true
-	@echo "Python tests..."
-	cd api && poetry run pytest || true
+	@echo "ML / Python tests..."
+	cd ml && pytest || true
+	@echo "Rust inference tests..."
+	cd inference && cargo test || true
+	@echo "Go API tests..."
+	cd api && go test ./... || true
+	@echo "React web tests..."
+	cd web && npm test || true

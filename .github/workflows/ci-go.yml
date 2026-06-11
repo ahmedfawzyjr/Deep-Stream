@@ -1,15 +1,13 @@
-name: CI - Go
+name: CI - Go API
 
 on:
   push:
     paths:
-      - 'gateway/**'
-      - 'proto/**'
+      - 'api/**'
       - '.github/workflows/ci-go.yml'
   pull_request:
     paths:
-      - 'gateway/**'
-      - 'proto/**'
+      - 'api/**'
 
 jobs:
   lint-and-test:
@@ -24,7 +22,7 @@ jobs:
           go-version: '1.22'
 
       - name: Verify dependencies
-        run: cd gateway && go mod verify
+        run: cd api && go mod verify
 
       - name: Run tests
-        run: cd gateway && go test -v ./...
+        run: cd api && go test -v ./...

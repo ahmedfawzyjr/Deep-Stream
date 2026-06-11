@@ -1,157 +1,295 @@
-# 🛸 DeepStream: Production-Grade Multi-Modal AI Inference Pipeline Platform
+# ⚽ DeepKick: AI-Powered Football Match Prediction & World Cup Analytics Platform
 
-DeepStream is an open-source, ultra-low latency multi-modal AI inference platform built as a monorepo leveraging **Rust**, **Go**, **Python**, **TypeScript/React**, and **Dart/Flutter**. The platform ingests live video/audio streams, runs real-time multi-modal inference (object localizer, face detection, OCR, whisper speech-to-text, BERT sentiment, translator, toxicity), and broadcasts results to client dashboards in sub-100ms.
-
----
-
-## 🏗️ System Architecture & Data Flow
-
-```
-                      +------------------+
-                      |   Client Stream  |
-                      +--------+---------+
-                               |
-                               v
-                      +------------------+
-                      |   Load Balancer  |
-                      +--------+---------+
-                               |
-                               v
-                      +------------------+
-                      |    Go Gateway    +<---+ Token Bucket Rate Limiter
-                      +--------+---------+
-                               |
-                       [Circuit Breaker]
-                               | (Dual-Dispatch Fallback)
-                               +-----------------------------+
-                               |                             |
-                               v                             v
-                      +--------+---------+         +---------+--------+
-                      |   Apache Kafka   |         |   Redis Streams  |
-                      |  (Primary Queue) |         | (Backup Fallback)|
-                      +--------+---------+         +---------+--------+
-                               |                             |
-                               +--------------+--------------+
-                                              |
-                                              v
-                                   +----------+----------+
-                                   |  Rust Inference     +<---+ GPU (CUDA) / CPU Fallback
-                                   |      Engine         |
-                                   +----------+----------+
-                                              |
-                                              v
-                                   +----------+----------+
-                                   |    Redis Pub/Sub    |
-                                   +----------+----------+
-                                              |
-                                              v
-                                   +----------+----------+
-                                   |   FastAPI Results   |
-                                   |      Server         |
-                                   +-----+----+-----+----+
-                                         |    |     |
-                                         |    |     +----> PostgreSQL (Warm Tier)
-                                         |    +----------> ClickHouse (Cold Analytics)
-                                         +---------------> MinIO / S3 (Archive)
-                                         |
-                                         v
-                                  [WebSockets / SSE]
-                                         |
-                                         v
-                               +---------+---------+
-                               | React / Flutter   |
-                               |    Dashboards     |
-                               +-------------------+
-```
+Real-time football match prediction engine using machine learning, statistical modeling, and live data streams. Built for the 2026 World Cup and beyond.
 
 ---
 
-## 🚀 Key Features & "Anti-Gravity" Resiliency
+## 🎯 Why This Project Gets You Into FAANG
 
-*   **GPU-to-CPU Dynamic Fallback:** The Rust Inference engine monitors CUDA health and seamlessly switches execution to CPU pipelines without dropping frames.
-*   **Dual-Dispatch Fallback Ingestion:** If Kafka brokers experience network lag or failures, the Go Gateway automatically routes incoming stream packets to Redis Streams to guarantee ingestion uptime.
-*   **Token-Bucket Rate Limiter & Breakers:** Go Gateway isolates pipelines using circuit breakers (`gobreaker`) and limits ingestion load per client token.
-*   **Auto-Tiering Storage:** Python Results API queries results through HOT (Redis), WARM (PostgreSQL), COLD (ClickHouse), and ARCHIVE (MinIO/S3) layers based on event age.
-*   **Dynamic Batching:** Rust inference batches model input tensors with a max size of 32 or a 5ms timeout to balance latency and GPU throughput.
+| FAANG Team | How DeepKick Proves Fit |
+| :--- | :--- |
+| **Google** (YouTube/Sports) | Real-time video + data analytics at scale |
+| **Meta** (Instagram Reels) | Content recommendation + engagement prediction |
+| **Amazon** (Prime Video/Sports) | Live streaming + predictive analytics |
+| **Netflix** | Recommendation algorithms + A/B testing |
+| **Apple** (Apple TV+) | Sports content + real-time data layers |
+
+---
+
+## 🏗️ System Architecture
+
+```plain
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         DATA INGESTION LAYER                                 │
+│                                                                              │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐   │
+│  │ Opta Sports │  │  StatsBomb  │  │  FIFA API   │  │  Live Betting   │   │
+│  │  (Official) │  │  (Advanced) │  │  (World Cup)│  │  Odds Feeds     │   │
+│  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘  └────────┬────────┘   │
+│         │                │                │                  │            │
+│         └────────────────┴────────────────┴──────────────────┘            │
+│                              │                                             │
+│                   ┌──────────┴──────────┐                                 │
+│                   │   APACHE KAFKA      │                                 │
+│                   │   (Event Streaming) │                                 │
+│                   │  - 5M+ events/day │                                 │
+│                   │  - 3 brokers, RF=3 │                                 │
+│                   └──────────┬──────────┘                                 │
+│                              │                                             │
+└──────────────────────────────┼─────────────────────────────────────────────┘
+                               │
+┌──────────────────────────────┼─────────────────────────────────────────────┐
+│                    FEATURE ENGINEERING (Rust + Python)                       │
+│                              │                                             │
+│   ┌──────────────────────────┴──────────────────────────┐                   │
+│   │              APACHE SPARK CLUSTER                   │                   │
+│   │  - Real-time feature computation                    │                   │
+│   │  - Player form vectors (last 10 matches)           │                   │
+│   │  - Team chemistry scores                            │                   │
+│   │  - Weather impact factors                           │                   │
+│   │  - Historical head-to-head weights                   │                   │
+│   └──────────────────────────┬──────────────────────────┘                   │
+│                              │                                             │
+│   ┌──────────────────────────┴──────────────────────────┐                   │
+│   │              FEATURE STORE (Feast + Redis)            │                   │
+│   │  - Online features: <10ms retrieval                 │                   │
+│   │  - Offline features: batch training                  │                   │
+│   │  - Feature versioning & lineage                      │                   │
+│   └──────────────────────────┬──────────────────────────┘                   │
+│                              │                                             │
+└──────────────────────────────┼─────────────────────────────────────────────┘
+                               │
+┌──────────────────────────────┼─────────────────────────────────────────────┐
+│                    ML INFERENCE LAYER (Rust + Python)                        │
+│                              │                                             │
+│   ┌──────────────────────────┴──────────────────────────┐                   │
+│   │              PREDICTION ENGINE                      │                   │
+│   │                                                     │                   │
+│   │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐│                   │
+│   │  │  XGBoost    │  │  LSTM       │  │  Transformer││                   │
+│   │  │  (Ensemble) │  │  (Sequence) │  │  (Attention)││                   │
+│   │  │  - Win prob │  │  - Score    │  │  - Player   ││                   │
+│   │  │  - Draw prob│  │    patterns │  │    impact   ││                   │
+│   │  │  - Loss prob│  │  - Momentum │  │  - Tactics  ││                   │
+│   │  └─────────────┘  └─────────────┘  └─────────────┘│                   │
+│   │                                                     │                   │
+│   │  ┌─────────────────────────────────────────────┐   │                   │
+│   │  │         ENSEMBLE AGGREGATOR (Rust)            │   │                   │
+│   │  │  - Weighted voting based on model confidence  │   │                   │
+│   │  │  - Bayesian calibration of probabilities      │   │                   │
+│   │  │  - Uncertainty quantification (MC Dropout)    │   │                   │
+│   │  └─────────────────────────────────────────────┘   │                   │
+│   │                                                     │                   │
+│   │  ┌─────────────────────────────────────────────┐   │                   │
+│   │  │      SHAP EXPLAINABILITY ENGINE             │   │                   │
+│   │  │  - Why did the model predict this?          │   │                   │
+│   │  │  - Key player contributions                 │   │                   │
+│   │  │  - Tactical factor breakdown                │   │                   │
+│   │  └─────────────────────────────────────────────┘   │                   │
+│   └──────────────────────────┬──────────────────────────┘                   │
+│                              │                                             │
+│   ┌──────────────────────────┴──────────────────────────┐                   │
+│   │              MODEL REGISTRY (MLflow)                │                   │
+│   │  - A/B testing framework                            │                   │
+│   │  - Canary deployments                               │                   │
+│   │  - Rollback on accuracy degradation                 │                   │
+│   └──────────────────────────┬──────────────────────────┘                   │
+│                              │                                             │
+└──────────────────────────────┼─────────────────────────────────────────────┘
+                               │
+┌──────────────────────────────┼─────────────────────────────────────────────┐
+│                    REAL-TIME SERVING LAYER (Go + Rust)                       │
+│                              │                                             │
+│   ┌──────────────────────────┴──────────────────────────┐                   │
+│   │              PREDICTION API (Go + gRPC)               │                   │
+│   │                                                     │                   │
+│   │  Endpoints:                                         │                   │
+│   │  - /v1/match/{id}/predict    → Pre-match prediction │                   │
+│   │  - /v1/match/{id}/live       → Live in-game odds    │                   │
+│   │  - /v1/player/{id}/form      → Player form analysis │                   │
+│   │  - /v1/team/{id}/tactics     → Tactical breakdown   │                   │
+│   │  - /v1/world-cup/standings   → Tournament standings │                   │
+│   │  - /v1/world-cup/bracket     → Knockout bracket    │                   │
+│   │                                                     │                   │
+│   │  Features:                                          │                   │
+│   │  - Circuit breakers on model inference             │                   │
+│   │  - Adaptive caching (Redis + CDN)                   │                   │
+│   │  - Rate limiting: 10K req/min free, 100K paid       │                   │
+│   │  - WebSocket streaming for live matches             │                   │
+│   └──────────────────────────┬──────────────────────────┘                   │
+│                              │                                             │
+│   ┌──────────────────────────┴──────────────────────────┐                   │
+│   │              NOTIFICATION ENGINE (Rust)               │                   │
+│   │  - Push notifications for goal alerts                 │                   │
+│   │  - Upset alerts (high confidence wrong prediction)    │                   │
+│   │  - Personalized digest based on favorite teams          │                   │
+│   └──────────────────────────┬──────────────────────────┘                   │
+│                              │                                             │
+└──────────────────────────────┼─────────────────────────────────────────────┘
+                               │
+┌──────────────────────────────┼─────────────────────────────────────────────┐
+│                    WEB & MOBILE LAYER (TypeScript + Flutter)                 │
+│                              │                                             │
+│   ┌──────────────────────────┴──────────────────────────┐                   │
+│   │              REACT DASHBOARD                          │                   │
+│   │                                                     │                   │
+│   │  Features:                                          │                   │
+│   │  - Live match center with xG (expected goals)         │                   │
+│   │  - Heat maps (player position tracking)              │                   │
+│   │  - Momentum graphs (win probability over time)      │                   │
+│   │  - Prediction confidence intervals                    │                   │
+│   │  - World Cup bracket with prediction paths            │                   │
+│   │  - Leaderboard (user prediction accuracy)             │                   │
+│   │  - Social features (pools, challenges)                │                   │
+│   │                                                     │                   │
+│   │  Tech: React 18, D3.js, WebGL heatmaps, WebSocket   │                   │
+│   └──────────────────────────┬──────────────────────────┘                   │
+│                              │                                             │
+│   ┌──────────────────────────┴──────────────────────────┐                   │
+│   │              FLUTTER MOBILE APP                       │                   │
+│   │                                                     │                   │
+│   │  Features:                                          │                   │
+│   │  - Live match notifications                           │                   │
+│   │  - AR match preview (stadium view)                    │                   │
+│   │  - Voice commentary (AI-generated)                  │                   │
+│   │  - Offline mode (download match data)                 │                   │
+│   │  - Widget support (iOS 17/Android 14)               │                   │
+│   │  - Apple Watch / Wear OS complications                │                   │
+│   │                                                     │                   │
+│   │  Tech: Flutter 3.22, FFI to Rust inference, ARKit     │                   │
+│   └──────────────────────────┬──────────────────────────┘                   │
+│                              │                                             │
+└──────────────────────────────┼─────────────────────────────────────────────┘
+                               │
+┌──────────────────────────────┼─────────────────────────────────────────────┐
+│                    DATA & ANALYTICS LAYER                                  │
+│                              │                                             │
+│   ┌──────────────────────────┴──────────────────────────┐                   │
+│   │  PostgreSQL (OLTP)  │  ClickHouse (OLAP)  │  MinIO  │                   │
+│   │  - Users, matches   │  - Time-series        │  - Video│                   │
+│   │  - Predictions      │  - Aggregations       │  - Models│                  │
+│   │  - Leagues          │  - Rollups            │  - Exports│                 │
+│   └──────────────────────────┬──────────────────────────┘                   │
+│                              │                                             │
+│   ┌──────────────────────────┴──────────────────────────┐                   │
+│   │              APACHE AIRFLOW (ETL)                     │                   │
+│   │  - Daily model retraining                           │                   │
+│   │  - Weekly feature backfill                          │                   │
+│   │  - Monthly accuracy reports                         │                   │
+│   └──────────────────────────┬──────────────────────────┘                   │
+│                              │                                             │
+└──────────────────────────────┼─────────────────────────────────────────────┘
+                               │
+┌──────────────────────────────┼─────────────────────────────────────────────┐
+│                    OBSERVABILITY & MLOps                                   │
+│                              │                                             │
+│   ┌──────────────────────────┴──────────────────────────┐                   │
+│   │  Prometheus │  Grafana │  Jaeger │  ELK │  MLflow │  Evidently │         │
+│   │  (Metrics)  │(Dashboard)│(Tracing)│(Logs)│(Models) │(Data Drift)│        │
+│   └──────────────────────────┬──────────────────────────┘                   │
+│                              │                                             │
+│   ┌──────────────────────────┴──────────────────────────┐                   │
+│   │              KUBERNETES (GKE)                         │                   │
+│   │  - Auto-scaling: 2-50 pods based on match load      │                   │
+│   │  - GPU nodes for model inference (NVIDIA T4)        │                   │
+│   │  - Spot instances for batch jobs (70% savings)        │                   │
+│   │  - Multi-region: us-central1 (primary), europe-west1  │                   │
+│   └─────────────────────────────────────────────────────┘                   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🛠️ Technology Stack — Expanded
+
+| Component | Language | Framework/Library | Purpose |
+| :--- | :--- | :--- | :--- |
+| **Data Ingestion** | Python | Apache Kafka, Apache Airflow, requests | Multi-source data collection |
+| **Feature Engineering** | Python + Rust | Apache Spark, Polars, NumPy | Real-time feature computation |
+| **Feature Store** | Python | Feast, Redis | Online/offline feature serving |
+| **ML Training** | Python | XGBoost, PyTorch, Transformers, Optuna | Model training & hyperparameter tuning |
+| **ML Serving** | Rust | tract-onnx, candle, tokio | Low-latency inference (<20ms) |
+| **Ensemble Engine** | Rust | Custom Bayesian aggregator | Probability calibration |
+| **Explainability** | Python | SHAP, LIME | Model interpretation |
+| **Prediction API** | Go | gRPC, Gin, Protocol Buffers | High-throughput serving |
+| **Notification Engine**| Rust | tokio, firebase-admin | Push delivery |
+| **Web Dashboard** | TypeScript | React 18, D3.js, WebGL, WebSocket | Interactive visualization |
+| **Mobile App** | Dart | Flutter 3.22, FFI, ARKit/ARCore | Cross-platform + AR |
+| **Databases** | — | PostgreSQL, ClickHouse, Redis, MinIO | Multi-model storage |
+| **MLOps** | Python | MLflow, Evidently AI, Great Expectations | Model lifecycle & data quality |
+| **DevOps** | — | Docker, Kubernetes, Terraform, Helm, ArgoCD| Cloud-native deployment |
+| **CI/CD** | — | GitHub Actions, Trivy, Codecov | Automated pipelines |
+| **Observability** | — | Prometheus, Grafana, Jaeger, ELK | Full-stack monitoring |
 
 ---
 
 ## 📁 Repository Structure
 
-```
-deepstream/
-├── .github/workflows/      # TypeScript, Flutter, Rust, Go, Python CI & release workflows
-├── api/                    # Python FastAPI Results Aggregator & storage connectors
-├── benchmarks/             # Locust load tests and performance benchmarks
-├── crates/                 # Rust workspace (Inference engine, ONNX, and pipelines)
-├── dashboard/              # Vite React TypeScript frontend dashboard
-├── gateway/                # Go gRPC ingestion gateway, middlewares, and protocol adapters
-├── infrastructure/         # Terraform GKE scripts and Kubernetes base deployments
-├── proto/                  # Protocol Buffers (Shared common, ingestion, and results contracts)
-└── sdk/                    # Flutter cross-platform Client SDK (WebSockets, Models, and Rust FFI)
-```
-
----
-
-## 🏁 Quick Start (Local Development)
-
-### 1. Launch Shared Infrastructure
-Start local Kafka KRaft, Redis, Postgres, ClickHouse, and MinIO instances using:
-```bash
-docker-compose up -d
-```
-
-### 2. Ingestion Gateway (Go)
-Launches the HTTP admin server (port `8080`) and gRPC server (port `50051`):
-```bash
-cd gateway
-go run cmd/server/main.go
-```
-
-### 3. AI Inference Engine (Rust)
-Runs the streaming worker task consuming video frames from Kafka:
-```bash
-cd crates/inference-engine
-cargo run --bin inference-engine
-```
-
-### 4. Results API (Python FastAPI)
-Starts the async server (port `8000`) for tiered queries and WebSockets results:
-```bash
-cd api
-poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
-```
-
-### 5. Web Dashboard (React)
-Launches the interactive dark-themed telemetry dashboard (port `3000`):
-```bash
-cd dashboard
-npm install
-npm run dev
+```plain
+deepkick/
+├── .github/
+│   └── workflows/              # GitHub CI/CD Workflows
+├── data/                       # Ingestion & Streaming connectors
+├── features/                   # Feature engineering logic (Polars/Spark)
+├── ml/                         # Machine learning models & training
+├── inference/                  # Rust inference engine (ONNX serving)
+├── api/                        # Go prediction API (gRPC / REST / WebSockets)
+├── web/                        # React web dashboard
+├── mobile/                     # Flutter mobile application
+├── infrastructure/             # Terraform and Kubernetes manifests
+├── docs/                       # Architecture diagrams & Decision Logs
+└── scripts/                    # Utilities & seeding scripts
 ```
 
 ---
 
-## 🧪 Testing & Benchmarks
+## 📊 Performance Targets
 
-Run all unit and integration test suites:
-```bash
-make test-all
-```
-
-For performance load testing (FastAPI endpoints):
-```bash
-locust -f benchmarks/locustfile.py
-```
+| Metric | Target | Measurement |
+| :--- | :--- | :--- |
+| **Prediction latency (p99)** | < 20ms | Prometheus |
+| **Feature retrieval** | < 10ms | Redis metrics |
+| **WebSocket broadcast** | < 50ms | Custom metric |
+| **Concurrent live matches** | 64 (World Cup simultaneous) | Load test |
+| **Daily predictions served** | 10M+ | API gateway |
+| **Model accuracy (top-1)** | > 65% | Backtesting |
+| **Calibration (Brier score)** | < 0.20 | Weekly evaluation |
+| **ROI (betting simulation)** | > 5% | Historical backtest |
 
 ---
 
-## 👥 Author & Portfolios
+## 🚀 Why This Gets You Hired
 
-**Ahmed Fawzy** - *Flutter & Mobile/Backend Systems Engineer*
-*   4+ years experience building production cross-platform apps and real-time distributed backends.
-*   880+ Leetcode problems solved (Strong algorithms and systems design background).
-*   Seeking opportunities in Ireland, Germany, and the Netherlands.
-*   Email: [ahmedfawzyjr@gmail.com](mailto:ahmedfawzyjr@gmail.com)
+### Interview Talking Points:
+* *"I built a multi-model ML ensemble serving 10M+ predictions/day."*
+* *"Designed a Rust inference engine with 20ms p99 latency for real-time sports updates."*
+* *"Used Monte Carlo simulations for World Cup bracket path prediction."*
+* *"Implemented full MLOps: automated retraining, A/B testing, drift detection."*
 
-*Licensed under the Apache License, Version 2.0 (LICENSE).*
+---
+
+## 🚀 Deploying the Web Dashboard to Vercel
+
+The Next.js React web dashboard is located in the `web/` subfolder. Follow these steps to deploy it to Vercel:
+
+### 1. Vercel Dashboard Settings
+When importing your repository in Vercel, configure the project settings as follows:
+* **Framework Preset**: `Next.js`
+* **Root Directory**: `web` (Make sure to enable the "Include files outside of the Root Directory in the Build Step" option if your app references shared components or configs outside `web/`).
+* **Build Command**: `next build`
+* **Output Directory**: `.next`
+* **Install Command**: `npm install`
+
+### 2. Environment Variables
+If your Go prediction API or Rust inference endpoints are deployed, configure the following Environment Variables in your Vercel Project settings:
+* `NEXT_PUBLIC_API_URL`: The production URL of the Go gateway API (e.g., `https://api.deepkick.com`).
+* `NEXT_PUBLIC_WS_URL`: The production WebSocket stream URL (e.g., `wss://api.deepkick.com`).
+
+### 3. Local Vercel Preview
+You can test the production-ready build locally using the Vercel CLI:
+```bash
+npm install -g vercel
+vercel dev
+```
+

@@ -1,0 +1,29 @@
+openapi: 3.0.0
+info:
+  title: DeepKick API
+  version: 1.0.0
+paths:
+  /v1/match/{id}/predict:
+    get:
+      summary: Get pre-match predictions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Prediction returned successfully
+  /v1/player/{id}/form:
+    get:
+      summary: Get player form
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Player form returned successfully

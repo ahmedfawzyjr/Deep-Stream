@@ -1,20 +1,20 @@
-name: CI Flutter (SDK)
+name: CI Flutter (Mobile App)
 
 on:
   push:
     branches: [ main ]
     paths:
-      - 'sdk/**'
+      - 'mobile/**'
   pull_request:
     branches: [ main ]
     paths:
-      - 'sdk/**'
+      - 'mobile/**'
 
 jobs:
   analyze-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
@@ -22,10 +22,10 @@ jobs:
           channel: 'stable'
 
       - name: Install dependencies
-        run: cd sdk && flutter pub get
+        run: cd mobile && flutter pub get
 
       - name: Run analyzer
-        run: cd sdk && flutter analyze
+        run: cd mobile && flutter analyze
 
       - name: Run unit tests
-        run: cd sdk && flutter test
+        run: cd mobile && flutter test

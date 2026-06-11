@@ -1,0 +1,7 @@
+n_estimators: 1000
+max_depth: 8
+learning_rate: 0.05
+subsample: 0.8
+colsample_bytree: 0.8
+tree_method: "hist"
+early_stopping_rounds: 50

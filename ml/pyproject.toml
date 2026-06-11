@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "deepkick-ml"
+version = "1.0.0"
+description = "DeepKick Machine Learning Models & Pipelines"
+authors = ["Ahmed Fawzy <ahmedfawzyjr@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+numpy = "^1.24"
+pandas = "^2.0"
+scikit-learn = "^1.2"
+xgboost = "^1.7"
+torch = "^2.0"
+shap = "^0.41"
+pyyaml = "^6.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

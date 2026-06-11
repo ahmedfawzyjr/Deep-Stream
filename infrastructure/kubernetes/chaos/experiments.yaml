@@ -1,11 +1,11 @@
 apiVersion: litmuschaos.io/v1alpha1
 kind: ChaosEngine
 metadata:
-  name: deepstream-chaos
-  namespace: deepstream
+  name: deepkick-chaos
+  namespace: deepkick
 spec:
   appinfo:
-    appns: 'deepstream'
+    appns: 'deepkick'
     applabel: 'app=inference-engine'
     appkind: 'deployment'
   
@@ -29,7 +29,7 @@ spec:
           env:
             # Add 200ms latency to Kafka traffic
             - name: TARGET_CONTAINER
-              value: 'gateway'
+              value: 'data-ingestion'
             - name: NETWORK_INTERFACE
               value: 'eth0'
             - name: LIB_IMAGE

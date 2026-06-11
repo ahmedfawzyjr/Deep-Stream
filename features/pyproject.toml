@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "deepkick-features"
+version = "1.0.0"
+description = "DeepKick Feature Engineering Engine"
+authors = ["Ahmed Fawzy <ahmedfawzyjr@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+numpy = "^1.24"
+polars = "^0.18"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

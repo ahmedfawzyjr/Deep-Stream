@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: inference-engine
-  namespace: deepstream
+  namespace: deepkick
 spec:
   replicas: 3
   selector:
@@ -20,7 +20,7 @@ spec:
         cloud.google.com/gke-accelerator: nvidia-tesla-t4
       containers:
         - name: inference
-          image: ghcr.io/ahmedfawzyjr/deepstream-inference:latest
+          image: ghcr.io/ahmedfawzyjr/deepkick-inference:latest
           ports:
             - containerPort: 8080
               name: grpc
@@ -41,7 +41,7 @@ spec:
             - name: KAFKA_BROKERS
               valueFrom:
                 configMapKeyRef:
-                  name: deepstream-config
+                  name: deepkick-config
                   key: kafka.brokers
           livenessProbe:
             grpc:
@@ -58,7 +58,7 @@ apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
   name: inference-engine-hpa
-  namespace: deepstream
+  namespace: deepkick
 spec:
   scaleTargetRef:
     apiVersion: apps/v1

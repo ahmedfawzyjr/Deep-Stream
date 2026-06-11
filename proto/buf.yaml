@@ -1,9 +1,0 @@
-version: v1
-name: buf.build/ahmedfawzyjr/deepstream
-deps: []
-lint:
-  use:
-    - DEFAULT
-breaking:
-  use:
-    - FILE

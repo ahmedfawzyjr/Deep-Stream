@@ -1,7 +1,7 @@
 variable "project_id" {
   type        = string
   description = "The GCP project ID to deploy into"
-  default     = "deepstream-staging"
+  default     = "deepkick-staging"
 }
 
 variable "region" {

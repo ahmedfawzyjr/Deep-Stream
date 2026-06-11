@@ -1,13 +1,14 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: deepstream-config
-  namespace: deepstream
+  name: deepkick-config
+  namespace: deepkick
 data:
-  kafka.brokers: "deepstream-kafka:9092"
-  redis.addr: "deepstream-redis:6379"
-  postgres.url: "postgresql+asyncpg://postgres:password@deepstream-postgres:5432/deepstream"
-  clickhouse.host: "deepstream-clickhouse"
+  kafka.brokers: "deepkick-kafka:9092"
+  redis.addr: "deepkick-redis:6379"
+  postgres.url: "postgresql+asyncpg://postgres:password@deepkick-postgres:5432/deepkick"
+  clickhouse.host: "deepkick-clickhouse"
   clickhouse.port: "8123"
-  minio.endpoint: "deepstream-minio:9000"
+  minio.endpoint: "deepkick-minio:9000"
   minio.secure: "false"
+

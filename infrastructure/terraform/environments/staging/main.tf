@@ -4,7 +4,7 @@ provider "google" {
 }
 
 resource "google_container_cluster" "primary" {
-  name     = "deepstream-staging-cluster"
+  name     = "deepkick-staging-cluster"
   location = var.zone
 
   remove_default_node_pool = true
@@ -15,7 +15,7 @@ resource "google_container_cluster" "primary" {
 }
 
 resource "google_container_node_pool" "primary_nodes" {
-  name       = "deepstream-node-pool"
+  name       = "deepkick-node-pool"
   location   = var.zone
   cluster    = google_container_cluster.primary.name
   node_count = var.node_count

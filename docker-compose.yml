@@ -4,7 +4,7 @@ services:
   # Message Queue: Kafka (KRaft mode)
   kafka:
     image: confluentinc/cp-kafka:7.4.0
-    container_name: deepstream-kafka
+    container_name: deepkick-kafka
     ports:
       - "9092:9092"
     environment:
@@ -23,36 +23,40 @@ services:
       KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
       CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
 
-  # Hot Tier Storage & Pub/Sub: Redis
+  # Hot Tier Storage & Feature Store caching: Redis
   redis:
     image: redis:7.0-alpine
-    container_name: deepstream-redis
+    container_name: deepkick-redis
     ports:
       - "6379:6379"
 
-  # Warm Tier DB: PostgreSQL
+  # Relational Database: PostgreSQL
   postgres:
     image: postgres:15-alpine
-    container_name: deepstream-postgres
+    container_name: deepkick-postgres
     ports:
       - "5432:5432"
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: deepstream
+      POSTGRES_DB: deepkick
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
-  # Cold Tier DB: ClickHouse
+  # Time-Series / OLAP Database: ClickHouse
   clickhouse:
     image: clickhouse/clickhouse-server:23.3
-    container_name: deepstream-clickhouse
+    container_name: deepkick-clickhouse
     ports:
       - "8123:8123"
       - "9000:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
 
-  # Object / Archive Storage: MinIO
+  # Object Store: MinIO
   minio:
     image: minio/minio:RELEASE.2023-05-18T00-12-52Z
-    container_name: deepstream-minio
+    container_name: deepkick-minio
     ports:
       - "9001:9001"
       - "9005:9000"
@@ -60,3 +64,10 @@ services:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+
+volumes:
+  postgres_data:
+  clickhouse_data:
+  minio_data:

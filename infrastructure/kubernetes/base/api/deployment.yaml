@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: api-service
-  namespace: deepstream
+  namespace: deepkick
 spec:
   replicas: 2
   selector:
@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: ghcr.io/ahmedfawzyjr/deepstream-api:latest
+          image: ghcr.io/ahmedfawzyjr/deepkick-api:latest
           ports:
             - containerPort: 8000
               name: http
@@ -23,27 +23,27 @@ spec:
             - name: POSTGRES_URL
               valueFrom:
                 configMapKeyRef:
-                  name: deepstream-config
+                  name: deepkick-config
                   key: postgres.url
             - name: CLICKHOUSE_HOST
               valueFrom:
                 configMapKeyRef:
-                  name: deepstream-config
+                  name: deepkick-config
                   key: clickhouse.host
             - name: CLICKHOUSE_PORT
               valueFrom:
                 configMapKeyRef:
-                  name: deepstream-config
+                  name: deepkick-config
                   key: clickhouse.port
             - name: MINIO_ENDPOINT
               valueFrom:
                 configMapKeyRef:
-                  name: deepstream-config
+                  name: deepkick-config
                   key: minio.endpoint
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:
-                  name: deepstream-secrets
+                  name: deepkick-secrets
                   key: jwt.secret
           livenessProbe:
             httpGet:
@@ -62,7 +62,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: api-service
-  namespace: deepstream
+  namespace: deepkick
 spec:
   selector:
     app: api-service
