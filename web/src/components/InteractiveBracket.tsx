@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Info, Sparkles, Shield, Cpu, RefreshCw, X } from 'lucide-react';
+import { playClickChime, playWhistleSound, playTrophyFanfare } from '../utils/audio';
 
 interface TeamNode {
   name: string;
@@ -28,6 +29,23 @@ interface Matchup {
 export default function InteractiveBracket() {
   const [selectedWinner, setSelectedWinner] = useState<string>("Argentina");
   const [activeSimulation, setActiveSimulation] = useState<Matchup | null>(null);
+
+  const handleSelectWinner = (name: string) => {
+    setSelectedWinner(name);
+    try {
+      playClickChime();
+      setTimeout(() => {
+        playTrophyFanfare();
+      }, 200);
+    } catch (e) {}
+  };
+
+  const handleOpenSimulation = (match: Matchup) => {
+    try {
+      playWhistleSound();
+    } catch (e) {}
+    setActiveSimulation(match);
+  };
 
   // Knockout stage matchups
   const matchups: Matchup[] = [
@@ -122,7 +140,7 @@ export default function InteractiveBracket() {
               style={{ padding: '12px 16px', width: '210px', border: '1px solid rgba(255,255,255,0.06)' }}
             >
               <div 
-                onClick={() => setSelectedWinner(match.teamA.name)}
+                onClick={() => handleSelectWinner(match.teamA.name)}
                 style={{ 
                   display: 'flex', justifyContent: 'space-between', paddingBottom: '6px', 
                   borderBottom: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer',
@@ -133,7 +151,7 @@ export default function InteractiveBracket() {
                 <span style={{ fontSize: '12px', opacity: 0.8 }}>{(match.teamA.probability * 100).toFixed(0)}%</span>
               </div>
               <div 
-                onClick={() => setSelectedWinner(match.teamB.name)}
+                onClick={() => handleSelectWinner(match.teamB.name)}
                 style={{ 
                   display: 'flex', justifyContent: 'space-between', paddingTop: '6px', cursor: 'pointer',
                   color: selectedWinner === match.teamB.name ? 'var(--color-green)' : 'inherit',
@@ -145,7 +163,7 @@ export default function InteractiveBracket() {
               
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
                 <button 
-                  onClick={() => setActiveSimulation(match)}
+                  onClick={() => handleOpenSimulation(match)}
                   style={{ display: 'flex', alignItems: 'center', gap: '3px', border: 'none', background: 'transparent', color: 'var(--color-blue)', fontSize: '10px', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                 >
                   <Cpu size={10} /> Model Simulator
@@ -227,7 +245,7 @@ export default function InteractiveBracket() {
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
                   <button 
-                    onClick={() => setActiveSimulation(match)}
+                    onClick={() => handleOpenSimulation(match)}
                     style={{ display: 'flex', alignItems: 'center', gap: '3px', border: 'none', background: 'transparent', color: 'var(--color-blue)', fontSize: '10px', fontWeight: 700, cursor: 'pointer', padding: 0 }}
                   >
                     <Cpu size={10} /> Model Simulator
@@ -301,7 +319,7 @@ export default function InteractiveBracket() {
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
               <button 
-                onClick={() => setActiveSimulation(matchups[6])}
+                onClick={() => handleOpenSimulation(matchups[6])}
                 style={{ display: 'flex', alignItems: 'center', gap: '3px', border: 'none', background: 'transparent', color: 'var(--color-gold)', fontSize: '10px', fontWeight: 700, cursor: 'pointer', padding: 0 }}
               >
                 <Sparkles size={10} /> Final Forecast

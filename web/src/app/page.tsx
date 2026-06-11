@@ -14,7 +14,9 @@ import {
   Zap,
   ChevronRight,
   TrendingDown,
-  Gauge
+  Gauge,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -22,6 +24,16 @@ import Stadium3D from '../components/Stadium3D';
 import D3MomentumChart from '../components/D3MomentumChart';
 import InteractiveBracket from '../components/InteractiveBracket';
 import LiveCalibration from '../components/LiveCalibration';
+
+import {
+  playKickSound,
+  playWhistleSound,
+  playClickChime,
+  playTrophyFanfare,
+  startStadiumAmbient,
+  stopStadiumAmbient
+} from '../utils/audio';
+
 
 interface MatchState {
   match_id: string;
@@ -38,6 +50,30 @@ interface MatchState {
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<string>("live");
+  const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
+
+  const toggleSound = () => {
+    if (soundEnabled) {
+      stopStadiumAmbient();
+      setSoundEnabled(false);
+    } else {
+      startStadiumAmbient();
+      playWhistleSound();
+      setSoundEnabled(true);
+    }
+  };
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab);
+    if (soundEnabled) {
+      playClickChime();
+      if (tab === "live") {
+        setTimeout(() => {
+          playWhistleSound();
+        }, 150);
+      }
+    }
+  };
   
   // Bayesian Simulator States
   const [argentinaForm, setArgentinaForm] = useState<number>(85);
@@ -142,15 +178,24 @@ export default function Home() {
           </div>
         </div>
         
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
           <button 
-            onClick={() => setActiveTab("live")}
+            onClick={toggleSound}
+            className="nav-tab"
+            style={{ color: soundEnabled ? 'var(--color-green)' : 'var(--text-muted)' }}
+            title={soundEnabled ? "Mute Ambient Sounds" : "Enable Ambient Sounds"}
+          >
+            {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            {soundEnabled ? "Sound On" : "Sound Off"}
+          </button>
+          <button 
+            onClick={() => handleTabChange("live")}
             className={`nav-tab ${activeTab === 'live' ? 'active' : ''}`}
           >
             <Flame size={16} /> Live Match Center
           </button>
           <button 
-            onClick={() => setActiveTab("bracket")}
+            onClick={() => handleTabChange("bracket")}
             className={`nav-tab nav-tab-bracket ${activeTab === 'bracket' ? 'active' : ''}`}
           >
             <Trophy size={16} /> World Cup Bracket

@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, Stars } from '@react-three/drei';
 import * as THREE from 'three';
+import { playClickChime, playKickSound } from '../utils/audio';
 
 // Define Camera Presets
 type CameraPreset = 'tactical' | 'broadcast' | 'goalline' | 'orbit';
@@ -157,6 +158,8 @@ function SpatialTrackingElements() {
   const groupRef = useRef<THREE.Group>(null);
   const ballRef = useRef<THREE.Mesh>(null);
 
+  const lastDirRef = useRef<number>(1);
+
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
 
@@ -182,11 +185,21 @@ function SpatialTrackingElements() {
 
     if (ballRef.current) {
       // Ball arcs/spins with dynamic movement towards Goal area
-      ballRef.current.position.x = Math.sin(t * 0.8) * 8;
+      const x = Math.sin(t * 0.8) * 8;
+      ballRef.current.position.x = x;
       ballRef.current.position.z = Math.cos(t * 0.5) * 3;
       ballRef.current.position.y = 0.25 + Math.abs(Math.sin(t * 2)) * 1.5;
       ballRef.current.rotation.y += 0.05;
       ballRef.current.rotation.x += 0.03;
+
+      // Rebound/kick sound trigger
+      const currentDir = Math.cos(t * 0.8) >= 0 ? 1 : -1;
+      if (currentDir !== lastDirRef.current) {
+        lastDirRef.current = currentDir;
+        try {
+          playKickSound();
+        } catch (e) {}
+      }
     }
   });
 
@@ -279,7 +292,12 @@ export default function Stadium3D() {
         {(['broadcast', 'tactical', 'goalline', 'orbit'] as CameraPreset[]).map((preset) => (
           <button
             key={preset}
-            onClick={() => setCameraPreset(preset)}
+            onClick={() => {
+              setCameraPreset(preset);
+              try {
+                playClickChime();
+              } catch (e) {}
+            }}
             style={{
               background: cameraPreset === preset ? 'var(--color-green)' : 'rgba(15, 23, 42, 0.85)',
               color: cameraPreset === preset ? '#020617' : '#f8fafc',
