@@ -24,6 +24,12 @@ import Stadium3D from '../components/Stadium3D';
 import D3MomentumChart from '../components/D3MomentumChart';
 import InteractiveBracket from '../components/InteractiveBracket';
 import LiveCalibration from '../components/LiveCalibration';
+import LiveCommentary from '../components/LiveCommentary';
+import ModelComparison from '../components/ModelComparison';
+import BettingSimulator from '../components/BettingSimulator';
+import PassingNetwork from '../components/PassingNetwork';
+import MonteCarloRunner from '../components/MonteCarloRunner';
+import ShapRadar from '../components/ShapRadar';
 
 import {
   playKickSound,
@@ -259,6 +265,26 @@ export default function Home() {
                     lossProb={probabilities.loss}
                   />
                 </div>
+
+                {/* SHAP Radar Chart Explainability */}
+                <div className="glass-panel" style={{ padding: '24px' }}>
+                  <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: 800 }}>
+                    <Activity size={20} color="var(--color-blue)" /> SHAP Explainability Vector
+                  </h3>
+                  <ShapRadar
+                    argentinaForm={argentinaForm}
+                    franceForm={franceForm}
+                    tacticalIndex={tacticalIndex}
+                    staminaIndex={staminaIndex}
+                    crowdFactor={crowdFactor}
+                    weatherImpact={weatherImpact}
+                  />
+                </div>
+
+                {/* Passing Network */}
+                <div className="glass-panel" style={{ padding: '24px' }}>
+                  <PassingNetwork />
+                </div>
               </div>
 
               {/* Right Side: Prediction Bars */}
@@ -373,6 +399,21 @@ export default function Home() {
                   </div>
                 </div>
 
+                {/* Model Comparison widget */}
+                <div className="glass-panel" style={{ padding: '24px' }}>
+                  <ModelComparison winProb={probabilities.win} drawProb={probabilities.draw} lossProb={probabilities.loss} />
+                </div>
+
+                {/* Betting Simulator */}
+                <div className="glass-panel" style={{ padding: '24px' }}>
+                  <BettingSimulator winProb={probabilities.win} drawProb={probabilities.draw} lossProb={probabilities.loss} />
+                </div>
+
+                {/* Live Commentary log */}
+                <div className="glass-panel" style={{ padding: '24px' }}>
+                  <LiveCommentary minute={minute} />
+                </div>
+
               </div>
             </motion.div>
           ) : (
@@ -381,7 +422,7 @@ export default function Home() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
-              style={{ gridColumn: '1 / -1' }}
+              style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '28px' }}
             >
               <div className="glass-panel" style={{ padding: '32px', overflowX: 'auto' }}>
                 <div style={{ textAlign: 'center', marginBottom: '28px' }}>
@@ -394,6 +435,9 @@ export default function Home() {
                 </div>
                 <InteractiveBracket />
               </div>
+
+              {/* Monte Carlo Tournament Runner */}
+              <MonteCarloRunner />
             </motion.div>
           )}
         </AnimatePresence>
