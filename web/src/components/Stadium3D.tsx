@@ -2,7 +2,7 @@
 
 import React, { useRef, useState, useEffect } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Stars } from '@react-three/drei';
+import { OrbitControls, Stars, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { playClickChime, playKickSound } from '../utils/audio';
 
@@ -16,10 +16,48 @@ interface CameraTarget {
 
 const PRESETS: Record<CameraPreset, CameraTarget> = {
   tactical: { pos: [0, 16, 0.1], look: [0, 0, 0] },
-  broadcast: { pos: [0, 10, 14], look: [0, 0, 0] },
+  broadcast: { pos: [0, 11, 15], look: [0, 0, 0] },
   goalline: { pos: [-14, 3, 0], look: [0, 1, 0] },
   orbit: { pos: [10, 8, 10], look: [0, 0, 0] }
 };
+
+interface PlayerData {
+  id: string;
+  name: string;
+  number: number;
+  team: 'arg' | 'fra';
+  position: [number, number, number];
+}
+
+// 11 Players for Argentina (4-3-3 Attacking)
+const ARGENTINA_PLAYERS: PlayerData[] = [
+  { id: 'arg_1', name: 'E. Martínez', number: 23, team: 'arg', position: [-12, 0, 0] },     // GK
+  { id: 'arg_2', name: 'N. Molina', number: 26, team: 'arg', position: [-9, 0, 4.5] },       // RB
+  { id: 'arg_3', name: 'C. Romero', number: 13, team: 'arg', position: [-9.5, 0, 1.8] },     // RCB
+  { id: 'arg_4', name: 'N. Otamendi', number: 19, team: 'arg', position: [-9.5, 0, -1.8] },   // LCB
+  { id: 'arg_5', name: 'N. Tagliafico', number: 3, team: 'arg', position: [-9, 0, -4.5] },   // LB
+  { id: 'arg_6', name: 'R. De Paul', number: 7, team: 'arg', position: [-5.5, 0, 2.2] },     // RCM
+  { id: 'arg_7', name: 'Enzo F.', number: 24, team: 'arg', position: [-7.0, 0, 0] },         // DM
+  { id: 'arg_8', name: 'A. Mac Allister', number: 20, team: 'arg', position: [-5.5, 0, -2.2] },// LCM
+  { id: 'arg_9', name: 'L. Messi', number: 10, team: 'arg', position: [-2.0, 0, 3.2] },      // RW
+  { id: 'arg_10', name: 'J. Álvarez', number: 9, team: 'arg', position: [-1.5, 0, 0] },      // ST
+  { id: 'arg_11', name: 'Á. Di María', number: 11, team: 'arg', position: [-2.0, 0, -3.2] }   // LW
+];
+
+// 11 Players for France (4-2-3-1 Fluid)
+const FRANCE_PLAYERS: PlayerData[] = [
+  { id: 'fra_1', name: 'M. Maignan', number: 16, team: 'fra', position: [12, 0, 0] },        // GK
+  { id: 'fra_2', name: 'J. Koundé', number: 5, team: 'fra', position: [9, 0, 4.5] },         // RB
+  { id: 'fra_3', name: 'D. Upamecano', number: 4, team: 'fra', position: [9.5, 0, 1.8] },    // RCB
+  { id: 'fra_4', name: 'I. Konaté', number: 24, team: 'fra', position: [9.5, 0, -1.8] },      // LCB
+  { id: 'fra_5', name: 'T. Hernandez', number: 22, team: 'fra', position: [9, 0, -4.5] },    // LB
+  { id: 'fra_6', name: 'A. Tchouaméni', number: 8, team: 'fra', position: [6.0, 0, 1.6] },   // RDM
+  { id: 'fra_7', name: 'A. Rabiot', number: 14, team: 'fra', position: [6.0, 0, -1.6] },      // LDM
+  { id: 'fra_8', name: 'O. Dembélé', number: 11, team: 'fra', position: [3.0, 0, 4.0] },      // RAM
+  { id: 'fra_9', name: 'A. Griezmann', number: 7, team: 'fra', position: [3.2, 0, 0] },      // AM
+  { id: 'fra_10', name: 'K. Mbappé', number: 10, team: 'fra', position: [2.5, 0, -4.0] },     // LAM
+  { id: 'fra_11', name: 'O. Giroud', number: 9, team: 'fra', position: [1.5, 0, 0] }         // ST
+];
 
 // Camera Controller component to lerp position & lookAt
 function CameraController({ preset }: { preset: CameraPreset }) {
@@ -121,15 +159,15 @@ function PitchGrid() {
       {/* 3D Goalposts Left */}
       <group position={[-13, 0, 0]}>
         <mesh position={[0, 1, -1.5]}>
-          <cylinderGeometry args={[0.06, 0.06, 2, 16]} />
+          <cylinderGeometry args={[0.04, 0.04, 2, 16]} />
           <meshStandardMaterial color="#ffffff" roughness={0.3} />
         </mesh>
         <mesh position={[0, 1, 1.5]}>
-          <cylinderGeometry args={[0.06, 0.06, 2, 16]} />
+          <cylinderGeometry args={[0.04, 0.04, 2, 16]} />
           <meshStandardMaterial color="#ffffff" roughness={0.3} />
         </mesh>
         <mesh position={[0, 2, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.05, 0.05, 3, 16]} />
+          <cylinderGeometry args={[0.035, 0.035, 3, 16]} />
           <meshStandardMaterial color="#ffffff" roughness={0.3} />
         </mesh>
       </group>
@@ -137,15 +175,15 @@ function PitchGrid() {
       {/* 3D Goalposts Right */}
       <group position={[13, 0, 0]}>
         <mesh position={[0, 1, -1.5]}>
-          <cylinderGeometry args={[0.06, 0.06, 2, 16]} />
+          <cylinderGeometry args={[0.04, 0.04, 2, 16]} />
           <meshStandardMaterial color="#ffffff" roughness={0.3} />
         </mesh>
         <mesh position={[0, 1, 1.5]}>
-          <cylinderGeometry args={[0.06, 0.06, 2, 16]} />
+          <cylinderGeometry args={[0.04, 0.04, 2, 16]} />
           <meshStandardMaterial color="#ffffff" roughness={0.3} />
         </mesh>
         <mesh position={[0, 2, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <cylinderGeometry args={[0.05, 0.05, 3, 16]} />
+          <cylinderGeometry args={[0.035, 0.035, 3, 16]} />
           <meshStandardMaterial color="#ffffff" roughness={0.3} />
         </mesh>
       </group>
@@ -153,35 +191,104 @@ function PitchGrid() {
   );
 }
 
-// 3D Players and Soccer ball
-function SpatialTrackingElements() {
-  const groupRef = useRef<THREE.Group>(null);
-  const ballRef = useRef<THREE.Mesh>(null);
+// 3D Player Object
+function Player({ player }: { player: PlayerData }) {
+  const meshRef = useRef<THREE.Group>(null);
+  const isArg = player.team === 'arg';
 
+  useFrame((state) => {
+    const t = state.clock.getElapsedTime();
+    if (meshRef.current) {
+      // Natural running/swaying movement
+      meshRef.current.position.y = Math.sin(t * 2.2 + player.number) * 0.04 + 0.15;
+      
+      const offset = Math.sin(t * 0.4 + player.number) * 0.18;
+      meshRef.current.position.x = player.position[0] + offset;
+      
+      // Rotate threat rings
+      const ring = meshRef.current.getObjectByName('threat-ring');
+      if (ring) {
+        const scale = 1.0 + Math.sin(t * 1.8 + player.number) * 0.12;
+        ring.scale.set(scale, scale, 1);
+      }
+    }
+  });
+
+  return (
+    <group ref={meshRef} position={player.position}>
+      {/* Dynamic Threat Ring */}
+      <mesh name="threat-ring" rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 0]}>
+        <ringGeometry args={[0.36, 0.44, 32]} />
+        <meshBasicMaterial color={isArg ? "var(--color-blue)" : "var(--color-purple)"} side={THREE.DoubleSide} transparent opacity={0.65} />
+      </mesh>
+
+      {/* Torso / Jersey */}
+      <mesh position={[0, 0.7, 0]} castShadow>
+        <boxGeometry args={[0.42, 0.65, 0.22]} />
+        {isArg ? (
+          <meshStandardMaterial color="#00e5ff" roughness={0.4} />
+        ) : (
+          <meshStandardMaterial color="#38bdf8" roughness={0.4} />
+        )}
+      </mesh>
+
+      {/* Head */}
+      <mesh position={[0, 1.15, 0]} castShadow>
+        <sphereGeometry args={[0.16, 16, 16]} />
+        <meshStandardMaterial color="#fcd34d" roughness={0.5} />
+      </mesh>
+
+      {/* Left arm */}
+      <mesh position={[-0.26, 0.7, 0]} rotation={[0, 0, 0.2]} castShadow>
+        <cylinderGeometry args={[0.06, 0.06, 0.45, 8]} />
+        <meshStandardMaterial color={isArg ? "#00e5ff" : "#38bdf8"} />
+      </mesh>
+
+      {/* Right arm */}
+      <mesh position={[0.26, 0.7, 0]} rotation={[0, 0, -0.2]} castShadow>
+        <cylinderGeometry args={[0.06, 0.06, 0.45, 8]} />
+        <meshStandardMaterial color={isArg ? "#00e5ff" : "#38bdf8"} />
+      </mesh>
+
+      {/* Shorts */}
+      <mesh position={[0, 0.3, 0]} castShadow>
+        <boxGeometry args={[0.44, 0.2, 0.24]} />
+        <meshStandardMaterial color="#ffffff" roughness={0.5} />
+      </mesh>
+
+      {/* HTML Tag Overlay */}
+      <Html distanceFactor={10} position={[0, 1.45, 0]}>
+        <div style={{
+          background: 'rgba(15, 23, 42, 0.88)',
+          backdropFilter: 'blur(4px)',
+          border: `1px solid ${isArg ? '#00e5ff' : '#a855f7'}`,
+          padding: '2px 5px',
+          borderRadius: '4px',
+          color: '#ffffff',
+          fontSize: '9px',
+          fontWeight: 'bold',
+          whiteSpace: 'nowrap',
+          pointerEvents: 'none',
+          boxShadow: '0 2px 6px rgba(0,0,0,0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '3px'
+        }}>
+          <span style={{ color: isArg ? '#00e5ff' : '#d8b4fe' }}>{player.number}</span>
+          <span>{player.name.split(' ').pop()}</span>
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+// 3D Ball with path rebound sounds
+function Ball() {
+  const ballRef = useRef<THREE.Mesh>(null);
   const lastDirRef = useRef<number>(1);
 
   useFrame((state) => {
     const t = state.clock.getElapsedTime();
-
-    if (groupRef.current) {
-      // Animate players with dynamic tactical movements
-      groupRef.current.children.forEach((child, i) => {
-        if (child.name === 'arg' || child.name === 'fra') {
-          // Micro floating
-          child.position.y = 0.5 + Math.sin(t * 1.5 + i) * 0.08;
-          // Tactical shifting back and forth
-          child.position.x += Math.sin(t * 0.4 + i) * 0.006;
-          child.position.z += Math.cos(t * 0.3 + i) * 0.004;
-
-          // Animate the threat ring size
-          const ring = child.getObjectByName('threat-ring');
-          if (ring) {
-            const scale = 1.0 + Math.sin(t * 2 + i) * 0.15;
-            ring.scale.set(scale, scale, 1);
-          }
-        }
-      });
-    }
 
     if (ballRef.current) {
       // Ball arcs/spins with dynamic movement towards Goal area
@@ -204,81 +311,10 @@ function SpatialTrackingElements() {
   });
 
   return (
-    <group ref={groupRef}>
-      {/* Argentina (Blue) Players */}
-      <group name="arg" position={[-6, 0.5, 3]}>
-        <mesh castShadow>
-          <cylinderGeometry args={[0.25, 0.25, 0.9, 16]} />
-          <meshStandardMaterial color="#00e5ff" emissive="#00e5ff" emissiveIntensity={0.2} roughness={0.2} />
-        </mesh>
-        <mesh name="threat-ring" rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.45, 0]}>
-          <ringGeometry args={[0.5, 0.6, 32]} />
-          <meshBasicMaterial color="#00e5ff" side={THREE.DoubleSide} transparent opacity={0.6} />
-        </mesh>
-      </group>
-
-      <group name="arg" position={[-3, 0.5, -2]}>
-        <mesh castShadow>
-          <cylinderGeometry args={[0.25, 0.25, 0.9, 16]} />
-          <meshStandardMaterial color="#00e5ff" emissive="#00e5ff" emissiveIntensity={0.2} roughness={0.2} />
-        </mesh>
-        <mesh name="threat-ring" rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.45, 0]}>
-          <ringGeometry args={[0.5, 0.6, 32]} />
-          <meshBasicMaterial color="#00e5ff" side={THREE.DoubleSide} transparent opacity={0.6} />
-        </mesh>
-      </group>
-
-      <group name="arg" position={[-8, 0.5, 0]}>
-        <mesh castShadow>
-          <cylinderGeometry args={[0.25, 0.25, 0.9, 16]} />
-          <meshStandardMaterial color="#00e5ff" emissive="#00e5ff" emissiveIntensity={0.2} roughness={0.2} />
-        </mesh>
-        <mesh name="threat-ring" rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.45, 0]}>
-          <ringGeometry args={[0.5, 0.6, 32]} />
-          <meshBasicMaterial color="#00e5ff" side={THREE.DoubleSide} transparent opacity={0.6} />
-        </mesh>
-      </group>
-
-      {/* France (Purple) Players */}
-      <group name="fra" position={[6, 0.5, -3]}>
-        <mesh castShadow>
-          <cylinderGeometry args={[0.25, 0.25, 0.9, 16]} />
-          <meshStandardMaterial color="#8a2be2" emissive="#8a2be2" emissiveIntensity={0.2} roughness={0.2} />
-        </mesh>
-        <mesh name="threat-ring" rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.45, 0]}>
-          <ringGeometry args={[0.5, 0.6, 32]} />
-          <meshBasicMaterial color="#8a2be2" side={THREE.DoubleSide} transparent opacity={0.6} />
-        </mesh>
-      </group>
-
-      <group name="fra" position={[3, 0.5, 2]}>
-        <mesh castShadow>
-          <cylinderGeometry args={[0.25, 0.25, 0.9, 16]} />
-          <meshStandardMaterial color="#8a2be2" emissive="#8a2be2" emissiveIntensity={0.2} roughness={0.2} />
-        </mesh>
-        <mesh name="threat-ring" rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.45, 0]}>
-          <ringGeometry args={[0.5, 0.6, 32]} />
-          <meshBasicMaterial color="#8a2be2" side={THREE.DoubleSide} transparent opacity={0.6} />
-        </mesh>
-      </group>
-
-      <group name="fra" position={[8, 0.5, 0]}>
-        <mesh castShadow>
-          <cylinderGeometry args={[0.25, 0.25, 0.9, 16]} />
-          <meshStandardMaterial color="#8a2be2" emissive="#8a2be2" emissiveIntensity={0.2} roughness={0.2} />
-        </mesh>
-        <mesh name="threat-ring" rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.45, 0]}>
-          <ringGeometry args={[0.5, 0.6, 32]} />
-          <meshBasicMaterial color="#8a2be2" side={THREE.DoubleSide} transparent opacity={0.6} />
-        </mesh>
-      </group>
-
-      {/* Soccer Ball with glow */}
-      <mesh ref={ballRef} position={[0, 0.25, 0]} castShadow>
-        <sphereGeometry args={[0.22, 20, 20]} />
-        <meshStandardMaterial color="#00ff87" emissive="#00ff87" emissiveIntensity={0.5} roughness={0.1} />
-      </mesh>
-    </group>
+    <mesh ref={ballRef} position={[0, 0.25, 0]} castShadow>
+      <sphereGeometry args={[0.22, 20, 20]} />
+      <meshStandardMaterial color="#00ff87" emissive="#00ff87" emissiveIntensity={0.5} roughness={0.1} />
+    </mesh>
   );
 }
 
@@ -286,7 +322,7 @@ export default function Stadium3D() {
   const [cameraPreset, setCameraPreset] = useState<CameraPreset>('broadcast');
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '360px', borderRadius: '14px', overflow: 'hidden', backgroundColor: '#020617', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+    <div style={{ position: 'relative', width: '100%', height: '380px', borderRadius: '14px', overflow: 'hidden', backgroundColor: '#020617', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
       {/* Floating Controls Overlay */}
       <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 10, display: 'flex', gap: '6px' }}>
         {(['broadcast', 'tactical', 'goalline', 'orbit'] as CameraPreset[]).map((preset) => (
@@ -330,7 +366,19 @@ export default function Stadium3D() {
         <pointLight position={[12, 8, 12]} intensity={0.6} color="var(--color-purple)" />
         
         <PitchGrid />
-        <SpatialTrackingElements />
+        
+        {/* Render all 11 Argentina players */}
+        {ARGENTINA_PLAYERS.map(player => (
+          <Player key={player.id} player={player} />
+        ))}
+
+        {/* Render all 11 France players */}
+        {FRANCE_PLAYERS.map(player => (
+          <Player key={player.id} player={player} />
+        ))}
+
+        <Ball />
+        
         <Stars radius={120} depth={40} count={1200} factor={3} saturation={0.8} fade speed={1.2} />
         
         <CameraController preset={cameraPreset} />
