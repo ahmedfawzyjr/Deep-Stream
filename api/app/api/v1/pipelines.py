@@ -31,7 +31,7 @@ async def create_pipeline(pipeline_data: PipelineCreate, db: AsyncSession = Depe
         id=pipeline_data.id,
         name=pipeline_data.name,
         config=pipeline_data.config,
-        owner_id=1, // hardcoded user ID context fallback
+        owner_id=1,  # hardcoded user ID context fallback
     )
     db.add(new_pipeline)
     await db.commit()

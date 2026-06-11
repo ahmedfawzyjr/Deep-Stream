@@ -30,7 +30,7 @@ class EventCorrelator:
         output = []
         for r in db_results:
             output.append({
-                "id": r.id,
+                "id": f"{r.pipeline_id}-{r.sequence}",
                 "pipeline_id": r.pipeline_id,
                 "sequence": r.sequence,
                 "detections": r.detections,

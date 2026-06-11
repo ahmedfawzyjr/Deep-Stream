@@ -23,7 +23,7 @@ class AntiGravityStorage:
     def __init__(self):
         # Initialize Redis client (sync with fallback)
         try:
-            self.redis = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
+            self.redis = redis.Redis(host="127.0.0.1", port=6379, db=0, decode_responses=True, socket_timeout=1.0, socket_connect_timeout=1.0)
             self.redis.ping()
             logger.info("TieredStorage: Redis HOT connection verified.")
         except Exception as e:

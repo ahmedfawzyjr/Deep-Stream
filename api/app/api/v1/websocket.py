@@ -13,7 +13,7 @@ async def websocket_endpoint(websocket: WebSocket, pipeline_id: str):
 
     # Connect to Redis sync client with pub/sub context
     try:
-        r = redis.Redis(host="localhost", port=6379, db=0, decode_responses=True)
+        r = redis.Redis(host="127.0.0.1", port=6379, db=0, decode_responses=True, socket_timeout=1.0, socket_connect_timeout=1.0)
         pubsub = r.pubsub()
         pubsub.subscribe(f"pipeline:{pipeline_id}:results")
         logger.info(f"Subscribed to Redis channel: pipeline:{pipeline_id}:results")
