@@ -25,6 +25,20 @@ resource "google_compute_backend_service" "api_backend" {
   port_name     = "http"
   timeout_sec   = 30
   health_checks = [google_compute_health_check.default.id]
+
+  # Primary Region: Europe
+  backend {
+    group           = "projects/deepkick-project/zones/europe-west1-b/networkEndpointGroups/deepkick-neg"
+    balancing_mode  = "RATE"
+    max_rate_per_endpoint = 1000
+  }
+
+  # Failover / Secondary Region: US
+  backend {
+    group           = "projects/deepkick-project/zones/us-east1-b/networkEndpointGroups/deepkick-neg"
+    balancing_mode  = "RATE"
+    max_rate_per_endpoint = 1000
+  }
 }
 
 resource "google_compute_health_check" "default" {
