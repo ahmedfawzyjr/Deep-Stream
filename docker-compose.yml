@@ -67,7 +67,49 @@ services:
     volumes:
       - minio_data:/data
 
+  # Prometheus: Metrics collection
+  prometheus:
+    image: prom/prometheus:v2.45.0
+    container_name: deepkick-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+
+  # Grafana: Metrics visualization dashboard
+  grafana:
+    image: grafana/grafana:9.5.2
+    container_name: deepkick-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+
+  # Jaeger: Distributed tracing collector & UI
+  jaeger:
+    image: jaegertracing/all-in-one:1.47
+    container_name: deepkick-jaeger
+    ports:
+      - "16686:16686" # Web UI
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+
 volumes:
   postgres_data:
   clickhouse_data:
   minio_data:
+  prometheus_data:
+  grafana_data:

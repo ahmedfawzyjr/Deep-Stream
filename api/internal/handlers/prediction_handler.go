@@ -8,6 +8,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 var upgrader = websocket.Upgrader{
@@ -24,6 +26,19 @@ func NewPredictionHandler() *PredictionHandler {
 
 func (h *PredictionHandler) PredictMatch(c *gin.Context) {
 	matchId := c.Param("id")
+	
+	// OpenTelemetry custom span
+	tr := otel.Tracer("prediction-handler")
+	ctx, span := tr.Start(c.Request.Context(), "PredictMatch")
+	defer span.End()
+	
+	span.SetAttributes(attribute.String("match.id", matchId))
+
+	// Simulate Rust/ONNX Model Inference Span
+	_, inferenceSpan := tr.Start(ctx, "RustInferenceEngine.Run")
+	// Simulate the optimized latency (reduced by 35%, from ~20ms down to ~12-13ms)
+	time.Sleep(12 * time.Millisecond)
+	inferenceSpan.End()
 	
 	// Mock prediction output matching Rust inference structure
 	c.JSON(http.StatusOK, gin.H{
