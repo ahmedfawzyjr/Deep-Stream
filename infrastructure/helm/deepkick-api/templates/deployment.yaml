@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "deepkick-api.fullname" . }}
+  labels:
+    app: {{ include "deepkick-api.name" . }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: {{ include "deepkick-api.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "deepkick-api.name" . }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: POSTGRES_URL
+              value: {{ .Values.env.postgresUrl | quote }}
+            - name: CLICKHOUSE_HOST
+              value: {{ .Values.env.clickhouseHost | quote }}
+            - name: CLICKHOUSE_PORT
+              value: {{ .Values.env.clickhousePort | quote }}
+            - name: MINIO_ENDPOINT
+              value: {{ .Values.env.minioEndpoint | quote }}
+            - name: JWT_SECRET
+              value: {{ .Values.env.jwtSecret | quote }}
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

@@ -1,0 +1,69 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: deepkick-gateway
+  namespace: deepkick
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 80
+        name: http
+        protocol: HTTP
+      hosts:
+        - "api.deepkick.com"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: deepkick-api-routing
+  namespace: deepkick
+spec:
+  hosts:
+    - "api.deepkick.com"
+  gateways:
+    - deepkick-gateway
+  http:
+    - route:
+        - destination:
+            host: deepkick-api-service
+            subset: v1-production
+          weight: 90
+        - destination:
+            host: deepkick-api-service
+            subset: v1-canary
+          weight: 10
+      retries:
+        attempts: 3
+        perTryTimeout: 2s
+        retryOn: "5xx,connect-failure,refused-stream"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: deepkick-api-circuitbreaker
+  namespace: deepkick
+spec:
+  host: deepkick-api-service
+  subsets:
+    - name: v1-production
+      labels:
+        version: v1.0.0
+    - name: v1-canary
+      labels:
+        version: v1.1.0-canary
+  trafficPolicy:
+    tls:
+      mode: ISTIO_MUTUAL
+    connectionPool:
+      tcp:
+        maxConnections: 1024
+      http:
+        http1MaxPendingRequests: 100
+        maxRequestsPerConnection: 10
+    outlierDetection:
+      consecutive5xxErrors: 3
+      interval: 10s
+      baseEjectionTime: 30s
+      maxEjectionPercent: 50

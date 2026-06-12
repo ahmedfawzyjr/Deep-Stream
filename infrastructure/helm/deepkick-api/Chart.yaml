@@ -1,0 +1,6 @@
+apiVersion: v2
+name: deepkick-api
+description: A Helm chart for Kubernetes deployment of DeepKick Go API
+type: application
+version: 1.0.0
+appVersion: "1.0.0"

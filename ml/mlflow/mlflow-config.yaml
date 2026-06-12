@@ -1,0 +1,17 @@
+# MLflow Server Configuration
+mlflow:
+  tracking_uri: "http://mlflow-server:5000"
+  artifact_root: "s3://deepkick-mlflow-artifacts" # MinIO / S3 backing store
+  backend_store_uri: "postgresql://postgres:password@postgres-service:5432/mlflow"
+
+# Model Registry parameters
+model_registry:
+  allowed_frameworks:
+    - "xgboost"
+    - "pytorch"
+    - "onnx"
+  stages:
+    - "Staging"
+    - "Production"
+    - "Archived"
+  auto_transition_on_drift: true

@@ -1,0 +1,25 @@
+# Vault Enterprise Secrets Engine Config
+path: "secret/data/deepkick/*"
+capabilities: ["read", "list"]
+
+# Database Dynamic Credential Setup
+path: "database/creds/postgres-deepkick"
+capabilities: ["read"]
+
+# JWT Signing Key rotation settings
+path: "transit/keys/jwt-signing-key"
+capabilities: ["update", "read"]
+
+# Policies definition
+policies:
+  - name: "api-service-policy"
+    rules: |
+      path "secret/data/deepkick/config" {
+        capabilities = ["read"]
+      }
+      path "secret/data/deepkick/jwt" {
+        capabilities = ["read"]
+      }
+      path "database/creds/app-role" {
+        capabilities = ["read"]
+      }
