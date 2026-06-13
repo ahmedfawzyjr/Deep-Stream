@@ -52,7 +52,7 @@ func main() {
 
 	// Initialize components
 	matchRepo := repository.NewMatchRepository(conn)
-	inferClient := service.NewStubInferenceClient()
+	inferClient := service.NewInferenceClient(cfg.InferenceAddr)
 	predSvc := service.NewPredictionService(matchRepo, inferClient)
 	hub := handler.NewHub()
 	matchHandler := handler.NewMatchHandler(matchRepo, predSvc, hub)
