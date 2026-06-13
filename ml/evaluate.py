@@ -45,8 +45,8 @@ def evaluate_model():
     model.load_model("ml/models/best_model.json")
     
     # Predict
-    preds_prob = model.predict_proba(X_test)
-    preds = model.predict(X_test)
+    preds_prob = model.predict_proba(X_test.values)
+    preds = model.predict(X_test.values)
     
     # Metrics
     acc = accuracy_score(y_test, preds)

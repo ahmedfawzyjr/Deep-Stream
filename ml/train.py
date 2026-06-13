@@ -44,9 +44,9 @@ def objective(trial, X, y):
         y_train, y_val = y.iloc[train_idx], y.iloc[val_idx]
         
         clf = xgb.XGBClassifier(**params)
-        clf.fit(X_train, y_train)
+        clf.fit(X_train.values, y_train.values)
         
-        preds = clf.predict_proba(X_val)
+        preds = clf.predict_proba(X_val.values)
         losses.append(log_loss(y_val, preds, labels=[0, 1, 2]))
         
     return np.mean(losses)
@@ -92,7 +92,7 @@ def run_training():
         
         print("Training final XGBoost classifier with best parameters...")
         model = xgb.XGBClassifier(**best_params)
-        model.fit(X_train, y_train)
+        model.fit(X_train.values, y_train.values)
         
         # Log final model
         mlflow.xgboost.log_model(model, "xgboost_model")
