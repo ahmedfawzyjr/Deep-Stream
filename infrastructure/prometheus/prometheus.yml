@@ -3,7 +3,12 @@ global:
   evaluation_interval: 5s
 
 scrape_configs:
-  - job_name: 'deepkick-go-api'
+  - job_name: 'deepstream-go-api'
     metrics_path: '/metrics'
     static_configs:
-      - targets: ['api:8080'] # When running in Docker network, api runs on port 8080
+      - targets: ['api:8080']
+
+  - job_name: 'deepstream-inference'
+    metrics_path: '/metrics'
+    static_configs:
+      - targets: ['inference:2112']

@@ -1,76 +1,70 @@
 version: '3.8'
 
 services:
-  # Message Queue: Kafka (KRaft mode)
-  kafka:
-    image: confluentinc/cp-kafka:7.4.0
-    container_name: deepkick-kafka
-    ports:
-      - "9092:9092"
-    environment:
-      KAFKA_NODE_ID: 1
-      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT'
-      KAFKA_ADVERTISED_LISTENERS: 'PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092'
-      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
-      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-      KAFKA_PROCESS_ROLES: 'broker,controller'
-      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:29093'
-      KAFKA_LISTENERS: 'PLAINTEXT://0.0.0.0:29092,CONTROLLER://0.0.0.0:29093,PLAINTEXT_HOST://0.0.0.0:9092'
-      KAFKA_INTER_BROKER_LISTENER_NAME: 'PLAINTEXT'
-      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
-      KAFKA_LOG_DIRS: '/tmp/kraft-combined-logs'
-      CLUSTER_ID: 'MkU3OEVBNTcwNTJENDM2Qk'
-
-  # Hot Tier Storage & Feature Store caching: Redis
-  redis:
-    image: redis:7.0-alpine
-    container_name: deepkick-redis
-    ports:
-      - "6379:6379"
-
-  # Relational Database: PostgreSQL
+  # Relational Database: PostgreSQL 16
   postgres:
-    image: postgres:15-alpine
-    container_name: deepkick-postgres
+    image: postgres:16-alpine
+    container_name: deepstream-postgres
     ports:
       - "5432:5432"
     environment:
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: deepkick
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: deepstream
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  # Time-Series / OLAP Database: ClickHouse
-  clickhouse:
-    image: clickhouse/clickhouse-server:23.3
-    container_name: deepkick-clickhouse
+  # Rust Inference Engine
+  inference:
+    build:
+      context: ./inference
+      dockerfile: Dockerfile
+    container_name: deepstream-inference
     ports:
-      - "8123:8123"
-      - "9000:9000"
-    volumes:
-      - clickhouse_data:/var/lib/clickhouse
-
-  # Object Store: MinIO
-  minio:
-    image: minio/minio:RELEASE.2023-05-18T00-12-52Z
-    container_name: deepkick-minio
-    ports:
-      - "9001:9001"
-      - "9005:9000"
+      - "50051:50051"
+      - "2112:2112"
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
-    command: server /data --console-address ":9001"
+      - MODEL_PATH=../models/match_predictor_v1.onnx
+      - RUST_LOG=info
     volumes:
-      - minio_data:/data
+      - ./models:/models
+    depends_on:
+      - postgres
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 50051"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Go REST + WebSocket API
+  api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: deepstream-api
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgres://postgres:postgres@postgres:5432/deepstream?sslmode=disable
+      - INFERENCE_ADDR=inference:50051
+      - JWT_SECRET=super-secret-jwt-key-change-in-production
+      - PORT=8080
+      - ENV=production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      inference:
+        condition: service_healthy
 
   # Prometheus: Metrics collection
   prometheus:
     image: prom/prometheus:v2.45.0
-    container_name: deepkick-prometheus
+    container_name: deepstream-prometheus
     ports:
       - "9090:9090"
     volumes:
@@ -79,11 +73,14 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
+    depends_on:
+      - api
+      - inference
 
   # Grafana: Metrics visualization dashboard
   grafana:
     image: grafana/grafana:9.5.2
-    container_name: deepkick-grafana
+    container_name: deepstream-grafana
     ports:
       - "3000:3000"
     volumes:
@@ -96,20 +93,7 @@ services:
     depends_on:
       - prometheus
 
-  # Jaeger: Distributed tracing collector & UI
-  jaeger:
-    image: jaegertracing/all-in-one:1.47
-    container_name: deepkick-jaeger
-    ports:
-      - "16686:16686" # Web UI
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
-    environment:
-      - COLLECTOR_OTLP_ENABLED=true
-
 volumes:
   postgres_data:
-  clickhouse_data:
-  minio_data:
   prometheus_data:
   grafana_data:
