@@ -2,85 +2,124 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
-	"deepkick-api/internal/handlers"
-	"deepkick-api/internal/otel"
-	"deepkick-api/internal/server"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
+	"github.com/jackc/pgx/v5"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/gin-gonic/gin"
-	"github.com/zsais/go-gin-prometheus"
-	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
+	"github.com/ahmedfawzyjr/deep-stream/api/internal/config"
+	"github.com/ahmedfawzyjr/deep-stream/api/internal/handler"
+	"github.com/ahmedfawzyjr/deep-stream/api/internal/middleware"
+	"github.com/ahmedfawzyjr/deep-stream/api/internal/repository"
+	"github.com/ahmedfawzyjr/deep-stream/api/internal/service"
 )
 
 func main() {
-	log.Println("⚽ Starting DeepKick Go Prediction API...")
+	// Initialize slog
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
 
-	// Initialize OpenTelemetry
-	ctx := context.Background()
-	otelEndpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
-	if otelEndpoint == "" {
-		otelEndpoint = "jaeger:4317" // Default to Jaeger container in docker-compose
-	}
-	tp, err := otel.InitTracer(ctx, "deepkick-api", otelEndpoint)
+	logger.Info("Starting DeepStream Prediction API...")
+
+	// Load config
+	cfg := config.Load()
+
+	// Connect to database
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	conn, err := pgx.Connect(ctx, cfg.DatabaseURL)
 	if err != nil {
-		log.Printf("⚠️ Warning: Failed to initialize OpenTelemetry: %v", err)
-	} else {
-		defer func() {
-			if err := tp.Shutdown(ctx); err != nil {
-				log.Printf("Error shutting down TracerProvider: %v", err)
+		logger.Error("failed to connect to database", slog.Any("err", err))
+		os.Exit(1)
+	}
+	defer conn.Close(context.Background())
+
+	logger.Info("Database connection established")
+
+	// Run migrations
+	if err := runMigrations(context.Background(), conn, logger); err != nil {
+		logger.Error("failed to run database migrations", slog.Any("err", err))
+		os.Exit(1)
+	}
+	logger.Info("Database migrations applied successfully")
+
+	// Initialize components
+	matchRepo := repository.NewMatchRepository(conn)
+	inferClient := service.NewStubInferenceClient()
+	predSvc := service.NewPredictionService(matchRepo, inferClient)
+	hub := handler.NewHub()
+	matchHandler := handler.NewMatchHandler(matchRepo, predSvc, hub)
+
+	// Router setup
+	r := chi.NewRouter()
+
+	// CORS configuration
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
+
+	// Logging & Rate Limiting Middlewares
+	r.Use(middleware.Logging(logger))
+	r.Use(middleware.RateLimit())
+
+	// Health check & Prometheus metrics
+	r.Get("/health", matchHandler.Health)
+	r.Handle("/metrics", promhttp.Handler())
+
+	// API v1 Routes
+	r.Route("/v1", func(r chi.Router) {
+		r.Get("/matches", matchHandler.List)
+		r.Get("/matches/{id}", matchHandler.GetByID)
+		r.Get("/ws/matches/{id}/live", hub.ServeWS)
+
+		// Prediction trigger - protected by JWT
+		r.With(middleware.Auth(cfg.JWTSecret)).Post("/matches/{id}/predict", matchHandler.Predict)
+	})
+
+	serverAddr := ":" + cfg.Port
+	logger.Info("Server listening on " + serverAddr)
+	if err := http.ListenAndServe(serverAddr, r); err != nil {
+		logger.Error("server failed to start", slog.Any("err", err))
+		os.Exit(1)
+	}
+}
+
+func runMigrations(ctx context.Context, conn *pgx.Conn, logger *slog.Logger) error {
+	migrations := []string{
+		"migrations/001_create_matches.sql",
+		"migrations/002_create_predictions.sql",
+		"migrations/003_create_users.sql",
+	}
+
+	for _, path := range migrations {
+		logger.Info("Running migration file", slog.String("path", path))
+		content, err := os.ReadFile(path)
+		if err != nil {
+			// Try reading from relative directory depending on execution context
+			// e.g. for testing we might need to go up
+			content, err = os.ReadFile("../../" + path)
+			if err != nil {
+				return fmt.Errorf("failed to read migration file %s: %w", path, err)
 			}
-		}()
-		log.Println("✅ OpenTelemetry Tracer initialized successfully.")
-	}
-
-	r := gin.Default()
-
-	// OpenTelemetry Gin Middleware
-	r.Use(otelgin.Middleware("deepkick-api"))
-
-	// Prometheus Metrics Middleware
-	p := ginprometheus.NewPrometheus("gin")
-	// Custom path or options can be configured here if needed.
-	p.Use(r)
-
-	// CORS Middleware
-	r.Use(func(c *gin.Context) {
-		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
-		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS, GET, PUT, DELETE")
-
-		if c.Request.Method == "OPTIONS" {
-			c.AbortWithStatus(http.StatusNoContent)
-			return
 		}
-		c.Next()
-	})
 
-	predictionHandler := handlers.NewPredictionHandler()
-
-	// API Group
-	v1 := r.Group("/v1")
-	{
-		v1.GET("/match/:id/predict", predictionHandler.PredictMatch)
-		v1.GET("/match/:id/live", predictionHandler.LiveMatchStream)
-		v1.GET("/player/:id/form", predictionHandler.PlayerForm)
-		v1.GET("/world-cup/standings", predictionHandler.WorldCupStandings)
-		v1.GET("/world-cup/bracket", predictionHandler.WorldCupBracket)
+		_, err = conn.Exec(ctx, string(content))
+		if err != nil {
+			return fmt.Errorf("migration run failed for %s: %w", path, err)
+		}
 	}
 
-	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{
-			"status":  "healthy",
-			"service": "deepkick-go-api",
-		})
-	})
-
-	srv := server.NewHttpServer(r)
-	if err := srv.Start(":8080"); err != nil {
-		log.Fatalf("Server failed: %v", err)
-	}
+	return nil
 }

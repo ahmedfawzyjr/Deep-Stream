@@ -1,15 +1,16 @@
-module deepkick-api
+module github.com/ahmedfawzyjr/deep-stream/api
 
-go 1.20
+go 1.22
 
 require (
-	github.com/gin-gonic/gin v1.9.0
-	github.com/gorilla/websocket v1.5.0
-	github.com/sony/gobreaker v0.5.0
-	github.com/zsais/go-gin-prometheus v0.1.0
-	go.opentelemetry.io/otel v1.17.0
-	go.opentelemetry.io/otel/sdk v1.17.0
-	go.opentelemetry.io/otel/trace v1.17.0
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracegrpc v1.17.0
-	go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin v0.42.0
+	github.com/go-chi/chi/v5 v5.0.12
+	github.com/go-chi/cors v1.2.1
+	github.com/go-chi/httprate v0.9.0
+	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/gorilla/websocket v1.5.1
+	github.com/jackc/pgx/v5 v5.5.5
+	github.com/prometheus/client_golang v1.19.0
+	github.com/stretchr/testify v1.9.0
+	github.com/testcontainers/testcontainers-go v0.29.1
+	github.com/testcontainers/testcontainers-go/modules/postgres v0.29.1
 )
