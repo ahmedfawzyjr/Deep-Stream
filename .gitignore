@@ -25,7 +25,7 @@ __pycache__/
 *.log
 
 # Databases / Storage files
-data/
+/data/
 *.db
 *.onnx
 models/
