@@ -1,0 +1,66 @@
+name: API CI
+
+on:
+  push:
+    paths:
+      - 'api/**'
+  pull_request:
+    paths:
+      - 'api/**'
+
+jobs:
+  test:
+    name: Build & Test Go API
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: deepstream
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          cache-dependency-path: 'api/go.sum'
+
+      - name: Go Vet
+        run: go vet ./...
+        working-directory: api
+
+      - name: Run Tests with Coverage
+        run: go test ./... -race -coverprofile=coverage.out
+        working-directory: api
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/deepstream?sslmode=disable
+
+      - name: Check Coverage Threshold (75%)
+        run: |
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | tr -d '%')
+          echo "Current coverage: $COVERAGE%"
+          if (( $(echo "$COVERAGE < 75" | bc -l) )); then
+            echo "Coverage is below 75% threshold"
+            exit 1
+          fi
+        working-directory: api
+
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          file: api/coverage.out
+          flags: api
+          token: ${{ secrets.CODECOV_TOKEN }}
