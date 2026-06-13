@@ -1,19 +1,19 @@
-# ADR-001: Why Go for the Prediction API
+# ADR-001: Why Go for the API Gateway
 
 ## Status: Accepted
 
 ## Context
-We need a high-throughput, low-latency API gateway to serve match predictions via REST and stream live updates via WebSockets to concurrent clients. We considered Python (FastAPI), Go (Chi), and Node.js.
+We need a robust, fast, and concurrent API gateway to handle REST requests and support persistent WebSocket connections for live match streaming predictions to clients.
 
 ## Decision
-We chose Go 1.22 with the Chi router for the API gateway service.
+We chose Go 1.22 with the Chi router for the primary web and WebSocket server.
 
 ## Reasons
-- **High Concurrency**: Goroutines have a low footprint (~2KB starting stack) and scale to thousands of active WebSocket connections much more efficiently than Python's async event loop or Node's single thread.
-- **Low Memory & Startup Overhead**: The compiled binary size is minimal (typically <20MB), making it lightweight for containerization and microsecond startup times.
-- **Strong Typings**: Avoids runtime errors typical in dynamic environments, which is crucial for handling complex sports stats telemetry.
-- **Standard Library**: Go provides a robust and highly performant standard `net/http` package and structured logging (`log/slog`).
+- **High Concurrency**: Go's goroutines make it extremely lightweight to handle thousands of concurrent WebSocket connections.
+- **Fast Startup & Low Memory**: Go binaries compile to native code, starting instantly and consuming minimal RAM compared to Node.js/JVM.
+- **Standard Library**: Go provides excellent native packages for networking, HTTP, and SQL.
+- **Maintainability**: Go's simple language design makes it easy for developers to read, write, and maintain.
 
 ## Consequences
-- Requires cross-language communication (gRPC) to request inference from the Rust-based ML engine.
-- Model training logic must remain in Python, requiring standard serialization formats like ONNX to share weights.
+- Need to write Go code for model invocation, translating to gRPC calls to the Rust inference service.
+- Manual serialization/deserialization logic is common in Go compared to dynamic languages, but it offers better type-safety.

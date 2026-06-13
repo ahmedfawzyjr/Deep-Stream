@@ -1,17 +1,18 @@
-# ADR-003: Why StatsBomb Open Data
+# ADR-003: Why StatsBomb Data for Machine Learning
 
 ## Status: Accepted
 
 ## Context
-A sports analytics platform needs real, rich, and high-fidelity football match events (such as coordinates of passes, shots, pressure, etc.) to train a predictive model. We evaluated scraping commercial websites, utilizing mock random data, or using open datasets.
+Training sports analytics models requires high-quality, event-level match data (passes, shots, positioning) rather than just final scores. Commercial data feeds are prohibitively expensive.
 
 ## Decision
-We chose the StatsBomb Open Dataset, accessed via the `statsbombpy` library.
+We chose the open-access StatsBomb dataset, accessed via the `statsbombpy` library.
 
 ## Reasons
-- **High-Fidelity Event Stream**: StatsBomb open data provides granular event-by-event details (coordinates, timestamps, body parts used, pressure indicators) for hundreds of matches, mirroring real industry data.
-- **Permissive & Free License**: Allows usage for educational, portfolio, and research purposes without requiring costly commercial feed subscriptions (e.g. Opta, Wyscout).
-- **Standardized Structure**: The dataset structure is stable and well-documented, minimizing the feature engineering and data cleaning overhead.
+- **High Granularity**: StatsBomb provides extremely detailed event-level data, including coordinates of plays, pressure indicators, and pass destinations.
+- **Free and Legal**: StatsBomb provides open-access data for several leagues (including La Liga) for academic and portfolio use.
+- **Python Library Support**: The `statsbombpy` package provides direct access to the data, fetching and parsing it into Pandas DataFrames.
 
 ## Consequences
-- The dataset is static and historical (e.g., La Liga 2017/2018), meaning the platform will simulate "live" streams by replaying historical events rather than pulling actual live matches in real-time.
+- The volume of data is high, which requires preprocessing and filtering to stay within memory limits on local machines.
+- Requires online network access during data ingestion or caching raw responses.
