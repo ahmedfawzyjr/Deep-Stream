@@ -28,4 +28,9 @@ __pycache__/
 data/
 *.db
 *.onnx
+models/
 !models/README.md
+
+# Test & Benchmarks
+coverage.out
+criterion/
