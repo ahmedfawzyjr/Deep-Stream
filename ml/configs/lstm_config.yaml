@@ -1,8 +1,0 @@
-input_size: 50
-hidden_size: 128
-num_layers: 2
-dropout: 0.3
-output_size: 3
-learning_rate: 0.001
-batch_size: 64
-epochs: 100
