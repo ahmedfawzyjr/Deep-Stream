@@ -1,75 +1,65 @@
 # Contributing to DeepStream
 
-Thank you for contributing! To maintain code quality and credibility, please follow these guidelines.
+Thank you for contributing! Please follow these guidelines to ensure a smooth workflow.
 
 ## Prerequisites
 
 - **Go**: 1.22+
-- **Rust**: Stable (1.77+)
-- **Python**: 3.11
-- **Docker & Docker Compose**
+- **Rust**: stable (1.77+)
+- **Python**: 3.11+
+- **Docker & Docker Compose**: For local infrastructure
 
-## Local Development & Running Components
+## Running Components Locally
 
-### 1. Go API (api/)
-To run the Go API locally:
+### 1. Go API
 ```bash
 cd api
-go run cmd/server/main.go
+go run ./cmd/server
 ```
 
-To run Go unit tests:
-```bash
-cd api
-go test ./... -race -coverprofile=coverage.out
-```
-
-### 2. Rust Inference Engine (inference/)
-To run the Rust gRPC server:
+### 2. Rust Inference Engine
 ```bash
 cd inference
 cargo run
 ```
 
-To run Rust unit tests:
-```bash
-cd inference
-cargo test
-```
-
-To run Criterion benchmarks:
-```bash
-cd inference
-cargo bench
-```
-
-### 3. Python ML Pipeline (ml/)
-To install dependencies and run python scripts:
+### 3. ML Pipeline
 ```bash
 cd ml
 pip install -r requirements.txt
 python train.py
 ```
 
-## Commit Message Guidelines
+## Running Tests
 
-We use [Conventional Commits](https://www.conventionalcommits.org/). Ensure your commit messages follow this schema:
+### Go API Tests
+```bash
+cd api
+go test ./... -race
+```
 
-- `feat(component): description` (new features)
-- `fix(component): description` (bug fixes)
-- `test(component): description` (adding/modifying tests)
-- `docs(component): description` (documentation changes)
-- `perf(component): description` (performance tuning)
-- `ci: description` (CI/CD pipeline updates)
+### Rust Inference Tests
+```bash
+cd inference
+cargo test
+```
 
-*Example:* `feat(api): add WebSocket live match stream`
+## Commit Message Format
 
-## Pull Request Checklist
+We enforce **Conventional Commits**:
+- `feat(...)`: A new feature
+- `fix(...)`: A bug fix
+- `test(...)`: Adding or updating tests
+- `docs(...)`: Documentation changes
+- `perf(...)`: Performance improvements
+- `ci(...)`: CI/CD changes
 
-Before submitting a PR:
-- [ ] Code compiles cleanly on Go, Rust, and Python environment.
-- [ ] Every new function has a corresponding unit test.
-- [ ] All unit tests pass locally.
-- [ ] Clippy/linter warnings are fixed.
-- [ ] Commit history is clean with incremental logical commits.
-- [ ] No TODO or placeholder stubs remain in the code.
+Example:
+`feat(api): add JWT authentication middleware`
+
+## PR Checklist
+
+- [ ] All functions have corresponding unit tests.
+- [ ] Code compiles and passes all checks.
+- [ ] Documentation is updated (README / ADRs if design changed).
+- [ ] Coverage requirements are met (e.g., 75% for API).
