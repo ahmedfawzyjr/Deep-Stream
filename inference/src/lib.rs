@@ -1,16 +1,9 @@
-pub mod models;
+pub mod error;
 pub mod features;
+pub mod engine;
 pub mod metrics;
-pub mod server;
-pub mod explainability;
-pub mod streaming;
 
-#[derive(Debug, thiserror::Error)]
-pub enum InferenceError {
-    #[error("ONNX model execution failed: {0}")]
-    OnnxError(String),
-    #[error("Feature lookup failed for key: {0}")]
-    FeatureLookupError(String),
-    #[error("Serialization / Deserialization error: {0}")]
-    SerializationError(String),
+// Include compiled proto file
+pub mod pb {
+    tonic::include_proto!("inference");
 }

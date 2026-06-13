@@ -1,0 +1,25 @@
+syntax = "proto3";
+package inference;
+
+service InferenceService {
+  rpc Predict(PredictRequest) returns (PredictResponse);
+  rpc Health(HealthRequest) returns (HealthResponse);
+}
+
+message PredictRequest {
+  string match_id = 1;
+  repeated float features = 2;
+}
+
+message PredictResponse {
+  float home_win_prob = 1;
+  float draw_prob = 2;
+  float away_win_prob = 3;
+  float latency_ms = 4;
+  string model_version = 5;
+}
+
+message HealthRequest {}
+message HealthResponse {
+  bool ok = 1;
+}
