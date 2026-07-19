@@ -1,22 +1,37 @@
-# DeepStream — Sports Analytics & ML Prediction Platform
+# DeepStream — AI Football Analytics & 3D Stadium Platform
 
 [![API CI](https://github.com/ahmedfawzyjr/Deep-Stream/actions/workflows/api.yml/badge.svg)](https://github.com/ahmedfawzyjr/Deep-Stream/actions)
 [![Inference CI](https://github.com/ahmedfawzyjr/Deep-Stream/actions/workflows/inference.yml/badge.svg)](https://github.com/ahmedfawzyjr/Deep-Stream/actions)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/ahmedfawzyjr/Deep-Stream?filename=api%2Fgo.mod)](https://go.dev/)
 
-DeepStream is a sports analytics system built to explore distributed systems, real-time data pipelines, and machine learning inference. The platform ingests football match event data from StatsBomb, processes features, trains XGBoost models, and serves live predictions over a high-throughput API.
+DeepStream (DeepKick) is an end-to-end sports analytics platform combining real-time machine learning inference, interactive 3D spatial telemetry, procedural stadium rendering, and Bayesian match prediction engines.
 
-## Live Demo
-Check out the live REST API endpoint: `https://deepstream-api.railway.app/health`
+---
 
-## What this project actually does
-- Ingests football match data from StatsBomb open dataset
-- Trains an XGBoost ensemble model to predict match outcomes
-- Serves predictions via a Go REST + WebSocket API
-- Runs a Rust/ONNX inference engine for low-latency scoring
-- Displays live predictions on a React dashboard and Flutter mobile app
+## 🌟 Key Modules
 
-## Architecture
+### 1. 🏟️ StadiView 3D Stadium Engine (3D Seat View & Telemetry)
+- **Procedural Stadium Render**: ~50,000+ instanced seats across 3 stadium tiers (Lower, Club, Upper) built with pure Three.js & GSAP.
+- **GPU Sub-pixel Seat Picking**: Interactive seat selection encoding pixel IDs into offscreen render buffers for instant selection.
+- **POV Camera Flight**: Smooth camera tweening into individual seat perspectives with live field view rendering.
+- **Live Crowd Shading & Sway**: Animated crowd meshes with customized vertex sway shaders driven by match intensity.
+- **Perimeter LED & Dynamic Scoreboard**: Real-time canvas-rendered scoreboards and scrolling perimeter ad boards.
+
+### 2. 🤖 DeepKick AI Match Analytics & Spatial Pitch
+- **3D Spatial Pitch Simulation**: React Three Fiber live pitch rendering player positional coordinates, movement vectors, and ball trajectories.
+- **Bayesian Calibration Engine**: Real-time win/draw/loss probability forecasting adjusted dynamically by team form, stamina, tactical share, crowd factor, and weather parameters.
+- **SHAP Feature Explainability**: Radar chart breakdown of ML feature importance driving match outcome predictions.
+- **D3 Dynamic Momentum Vector**: Attack momentum timeline tracking shift in dominance minute-by-minute.
+- **Interactive Knockout Bracket**: 2026 FIFA World Cup tree visualizer integrated with 1,000,000-run Monte Carlo tournament simulations.
+
+### 3. ⚡ High-Performance ML & API Infrastructure
+- **Go 1.22 REST & WebSocket API**: High-throughput gateway serving telemetry streams and predictions.
+- **Rust ONNX Inference Engine**: Sub-1.5ms model scoring using `tract-onnx` over gRPC.
+- **Python ML Pipeline**: XGBoost ensemble model trained on StatsBomb open data tuned with Optuna.
+
+---
+
+## 🏗️ Architecture
 
 ```text
        +-------------------------+
@@ -27,7 +42,6 @@ Check out the live REST API endpoint: `https://deepstream-api.railway.app/health
        +-------------------------+
        |   Python ML Pipeline    | ---> [ XGBoost Model (ONNX) ]
        +-------------------------+              |
-                                                |
                                                 v
 +------------------+         +------------------+
 |   Go REST & WS   | <-----> |    Rust ONNX     |
@@ -36,52 +50,50 @@ Check out the live REST API endpoint: `https://deepstream-api.railway.app/health
          |
          | (WebSockets / HTTP)
          v
-+--------------------------------+
-|          Web Dashboard         |
-+--------------------------------+
++-------------------------------------------------------------+
+|               Next.js Web App (DeepKick)                     |
+|  [ Live Match ]  |  [ 🏟️ Stadium View ]  |  [ 🏆 Bracket ] │
++-------------------------------------------------------------+
 ```
 
-## Tech Stack
+---
 
-- **Go 1.22**: Main API gateway and WebSocket provider (Chi + pgx).
-- **Rust stable (1.77+)**: High-performance gRPC model inference using `tract-onnx` and `tonic`.
-- **Python 3.12**: Machine learning training pipeline using XGBoost, Optuna, MLflow, and statsbombpy.
-- **PostgreSQL 16**: Relational storage for matches and prediction history.
-- **Docker & Docker Compose**: Full-stack containerization and health orchestration.
-- **Prometheus & Grafana**: Observability and metrics collection.
+## 💻 Tech Stack
 
-## Real Benchmarks
+- **Frontend & 3D**: Next.js 14, React 18, Three.js, React Three Fiber, Drei, D3.js, GSAP, Framer Motion, Lucide Icons, Vanilla CSS.
+- **API & Gateway**: Go 1.22 (Chi, WebSocket, pgx).
+- **Inference Engine**: Rust stable 1.77+ (`tract-onnx`, `tonic` gRPC).
+- **Machine Learning**: Python 3.12, XGBoost, Optuna, MLflow, StatsBombPy.
+- **Database & Services**: PostgreSQL 16, Docker Compose, Prometheus, Grafana.
 
-- **Inference Latency (p99)**: 1.42ms (measured via Criterion benchmark)
-- **API Throughput**: 340+ req/s at p99 latency of 28.42ms under 100 concurrent users (measured via k6 load test)
-- **ML Model Accuracy**: 42.9% accuracy on held-out La Liga test set (realistic football prediction baseline)
+---
 
-## Status
+## ⚡ Performance Benchmarks
 
-| Component | Status | Description |
-|---|---|---|
-| Go REST + WS API | ✅ Working | Endpoints, rate-limiting, JWT auth, and live WS broadcast |
-| Rust Inference Engine | ✅ Working | gRPC service running tract-onnx model inference |
-| Python ML Pipeline | ✅ Working | XGBoost training, Optuna tuning, and ONNX export |
-| Docker Compose Setup | ✅ Working | Multi-stage containerization with health checks |
+- **3D Stadium Seats**: 33,840 active seats rendered at 60 FPS using InstancedMesh.
+- **Inference Latency (p99)**: 1.42ms (measured via Rust Criterion benchmark).
+- **API Throughput**: 340+ req/s at p99 latency of 28.42ms (measured via k6 load test).
+- **ML Accuracy**: 42.9% accuracy on La Liga held-out test dataset.
 
-## Running Locally
+---
 
-To run the complete stack locally:
+## 🚀 Running Locally
 
-1. Ensure you have Docker and Docker Compose installed.
-2. Copy `.env.example` to `.env`.
-3. Build and start the services:
-   ```bash
-   docker-compose up --build
-   ```
-4. Access the services:
-   - Go API: `http://localhost:8080/health`
-   - Grafana Dashboard: `http://localhost:3000` (admin/admin)
-   - Prometheus: `http://localhost:9090`
+```bash
+# Clone the repository
+git clone https://github.com/ahmedfawzyjr/Deep-Stream.git
+cd Deep-Stream
 
-## Monitoring Dashboard
+# Run the web dashboard (Next.js)
+cd web
+npm install
+npm run dev
+```
 
-Here is a visual overview of the Grafana dashboard scraping live API and Rust inference statistics:
+Open [http://localhost:3000](http://localhost:3000) in your browser to experience the Live Match Center, 3D Stadium View, and World Cup Knockout Visualizer.
 
-![Grafana Dashboard](docs/benchmarks/grafana_dashboard.png)
+---
+
+## 📜 License
+
+PolyForm Noncommercial License 1.0.0 & MIT.

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Trophy, 
   Flame, 
@@ -16,7 +16,8 @@ import {
   TrendingDown,
   Gauge,
   Volume2,
-  VolumeX
+  VolumeX,
+  Landmark
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -30,12 +31,13 @@ import BettingSimulator from '../components/BettingSimulator';
 import PassingNetwork from '../components/PassingNetwork';
 import MonteCarloRunner from '../components/MonteCarloRunner';
 import ShapRadar from '../components/ShapRadar';
+import StadiViewStadium from '../components/StadiViewStadium';
+import SeatPickerPanel, { type SeatInfo } from '../components/SeatPickerPanel';
+import MatchAnalyticsBar from '../components/MatchAnalyticsBar';
 
 import {
-  playKickSound,
   playWhistleSound,
   playClickChime,
-  playTrophyFanfare,
   startStadiumAmbient,
   stopStadiumAmbient
 } from '../utils/audio';
@@ -57,6 +59,15 @@ interface MatchState {
 export default function Home() {
   const [activeTab, setActiveTab] = useState<string>("live");
   const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
+
+  // Stadium View state
+  const [selectedSeat, setSelectedSeat] = useState<SeatInfo | null>(null);
+  const minimapRef = useRef<HTMLCanvasElement>(null);
+
+  const [scoreHome] = useState(2);
+  const [scoreAway] = useState(1);
+  const xgHome = 1.65;
+  const xgAway = 0.98;
 
   const toggleSound = () => {
     if (soundEnabled) {
@@ -84,10 +95,10 @@ export default function Home() {
   // Bayesian Simulator States
   const [argentinaForm, setArgentinaForm] = useState<number>(85);
   const [franceForm, setFranceForm] = useState<number>(81);
-  const [tacticalIndex, setTacticalIndex] = useState<number>(55); // 55% possession share
-  const [staminaIndex, setStaminaIndex] = useState<number>(88);   // 88% Stamina rating
-  const [crowdFactor, setCrowdFactor] = useState<number>(75);     // 75% Home-like support
-  const [weatherImpact, setWeatherImpact] = useState<number>(68);   // 68% Climate fit
+  const [tacticalIndex, setTacticalIndex] = useState<number>(55);
+  const [staminaIndex, setStaminaIndex] = useState<number>(88);
+  const [crowdFactor, setCrowdFactor] = useState<number>(75);
+  const [weatherImpact, setWeatherImpact] = useState<number>(68);
 
   // Probabilities derived dynamically from parametric inputs
   const [probabilities, setProbabilities] = useState({ win: 0.49, draw: 0.27, loss: 0.24 });
@@ -97,8 +108,10 @@ export default function Home() {
     "🔥 SPATIAL UPDATE: Argentina threat index increased by +12.4% in the penalty box.",
     "📊 LIVE ESTIMATE: Expected Goals (xG) calibration matches 1M simulated Monte Carlo iterations.",
     "⚠️ PLAYER WARNING: France defensive line stamina levels falling below 70% baseline.",
+    "🏟️ STADIUM VIEW: Click any seat in the Stadium View tab to preview the match from your vantage point.",
     "💡 OPTIMIZATION TIP: Click 'Model Simulator' inside the bracket to view deep feature explainability models.",
-    "🏆 HISTORIC RATIO: Meta-learner models predict a 73.4% chance of penalty shootouts in tie scenarios."
+    "🏆 HISTORIC RATIO: Meta-learner models predict a 73.4% chance of penalty shootouts in tie scenarios.",
+    "📍 STADIUM LIVE: 45,732 fans in attendance. Section 101–132 (Lower Tier) at 96% capacity."
   ];
   const [tickerIndex, setTickerIndex] = useState(0);
 
@@ -198,7 +211,13 @@ export default function Home() {
             onClick={() => handleTabChange("live")}
             className={`nav-tab ${activeTab === 'live' ? 'active' : ''}`}
           >
-            <Flame size={16} /> Live Match Center
+            <Flame size={16} /> Live Match
+          </button>
+          <button 
+            onClick={() => handleTabChange("stadium")}
+            className={`nav-tab nav-tab-stadium ${activeTab === 'stadium' ? 'active' : ''}`}
+          >
+            <Landmark size={16} /> Stadium View
           </button>
           <button 
             onClick={() => handleTabChange("bracket")}
@@ -212,7 +231,73 @@ export default function Home() {
       {/* Main Grid View */}
       <main className="dashboard-grid">
         <AnimatePresence mode="wait">
-          {activeTab === "live" ? (
+          {activeTab === "stadium" ? (
+            <motion.div
+              key="stadium-tab"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '20px' }}
+            >
+              {/* Match Analytics Bar — shared live context */}
+              <MatchAnalyticsBar
+                minute={minute}
+                scoreHome={scoreHome}
+                scoreAway={scoreAway}
+                xgHome={xgHome}
+                xgAway={xgAway}
+                winProb={probabilities.win}
+                drawProb={probabilities.draw}
+                lossProb={probabilities.loss}
+              />
+
+              {/* Stadium 3D + Seat Panel */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px', alignItems: 'start' }}>
+                {/* 3D Stadium Canvas */}
+                <StadiViewStadium
+                  minute={minute}
+                  scoreHome={scoreHome}
+                  scoreAway={scoreAway}
+                  matchTitle="ARGENTINA VS SPAIN"
+                  homeTeamCode="ARG"
+                  awayTeamCode="ESP"
+                  minimapCanvasRef={minimapRef}
+                  onSeatSelect={(info) => setSelectedSeat(info)}
+                />
+
+                {/* Seat Picker Panel */}
+                <SeatPickerPanel
+                  seatInfo={selectedSeat}
+                  minimapRef={minimapRef}
+                  onCheckout={(info) => {
+                    if (soundEnabled) playWhistleSound();
+                  }}
+                  onViewAnalytics={() => handleTabChange('live')}
+                />
+              </div>
+
+              {/* Section info footer */}
+              <div className="glass-panel" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <Landmark size={18} color="var(--color-gold)" />
+                  <span style={{ fontWeight: 800, fontSize: '14px' }}>Estadio Metropolitano · Madrid, Spain</span>
+                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Capacity: 67,829</span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {[
+                    { label: 'Lower Tier', color: 'var(--color-blue)', sections: '101–132' },
+                    { label: 'Club Tier', color: 'var(--color-gold)', sections: '201–224' },
+                    { label: 'Upper Tier', color: 'var(--text-muted)', sections: '301–332' },
+                  ].map(tier => (
+                    <div key={tier.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 10px', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', fontWeight: 700 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: tier.color, display: 'inline-block' }} />
+                      {tier.label} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>{tier.sections}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          ) : activeTab === "live" ? (
             <motion.div 
               key="live-tab"
               initial={{ opacity: 0, y: 15 }}

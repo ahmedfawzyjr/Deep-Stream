@@ -28,6 +28,7 @@ interface MatchState {
 export default function App() {
   const [matchId, setMatchId] = useState<string>("wc_final_2026");
   const [activeTab, setActiveTab] = useState<string>("live");
+  const [wsConnected, setWsConnected] = useState<boolean>(false);
   const [matchState, setMatchState] = useState<MatchState>({
     match_id: "wc_final_2026",
     win_probability: 0.48,
@@ -38,31 +39,87 @@ export default function App() {
     momentum: 45
   });
 
-  // Simulated WebSocket feed
+  // Dual-mode WebSocket with simulation fallback
   useEffect(() => {
-    const interval = setInterval(() => {
-      setMatchState(prev => {
-        const delta = (Math.random() - 0.5) * 0.04;
-        let win = Math.max(0.1, Math.min(0.8, prev.win_probability + delta));
-        let loss = Math.max(0.1, Math.min(0.8, prev.loss_probability - delta));
-        const draw = 1.0 - win - loss;
+    let socket: WebSocket | null = null;
+    let simInterval: NodeJS.Timeout | null = null;
 
-        return {
-          ...prev,
-          win_probability: Number(win.toFixed(3)),
-          draw_probability: Number(draw.toFixed(3)),
-          loss_probability: Number(loss.toFixed(3)),
-          minute: prev.minute >= 90 ? 1 : prev.minute + 1,
-          xg: {
-            team_a: Number((prev.xg.team_a + Math.random() * 0.05).toFixed(2)),
-            team_b: Number((prev.xg.team_b + Math.random() * 0.03).toFixed(2))
-          },
-          momentum: Math.round((win - loss) * 100)
+    const startSimulation = () => {
+      if (simInterval) clearInterval(simInterval);
+      simInterval = setInterval(() => {
+        setMatchState(prev => {
+          const delta = (Math.random() - 0.5) * 0.04;
+          let win = Math.max(0.1, Math.min(0.8, prev.win_probability + delta));
+          let loss = Math.max(0.1, Math.min(0.8, prev.loss_probability - delta));
+          const draw = 1.0 - win - loss;
+
+          return {
+            ...prev,
+            win_probability: Number(win.toFixed(3)),
+            draw_probability: Number(draw.toFixed(3)),
+            loss_probability: Number(loss.toFixed(3)),
+            minute: prev.minute >= 90 ? 1 : prev.minute + 1,
+            xg: {
+              team_a: Number((prev.xg.team_a + Math.random() * 0.05).toFixed(2)),
+              team_b: Number((prev.xg.team_b + Math.random() * 0.03).toFixed(2))
+            },
+            momentum: Math.round((win - loss) * 100)
+          };
+        });
+      }, 1500);
+    };
+
+    const connectWS = () => {
+      try {
+        const wsUrl = `ws://localhost:8080/v1/ws/matches/${matchId}/live`;
+        socket = new WebSocket(wsUrl);
+
+        socket.onopen = () => {
+          setWsConnected(true);
+          if (simInterval) {
+            clearInterval(simInterval);
+            simInterval = null;
+          }
         };
-      });
-    }, 1500);
 
-    return () => clearInterval(interval);
+        socket.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            setMatchState(prev => ({
+              ...prev,
+              win_probability: data.home_win_prob ?? prev.win_probability,
+              draw_probability: data.draw_prob ?? prev.draw_probability,
+              loss_probability: data.away_win_prob ?? prev.loss_probability,
+              minute: data.minute ?? prev.minute,
+              xg: data.xg ?? prev.xg,
+              momentum: data.momentum ?? Math.round(((data.home_win_prob ?? prev.win_probability) - (data.away_win_prob ?? prev.loss_probability)) * 100)
+            }));
+          } catch (e) {
+            console.error("Failed to parse WebSocket message:", e);
+          }
+        };
+
+        socket.onclose = () => {
+          setWsConnected(false);
+          startSimulation();
+        };
+
+        socket.onerror = () => {
+          setWsConnected(false);
+        };
+      } catch (err) {
+        setWsConnected(false);
+        startSimulation();
+      }
+    };
+
+    connectWS();
+    startSimulation(); // Always start simulation as a base/fallback
+
+    return () => {
+      if (socket) socket.close();
+      if (simInterval) clearInterval(simInterval);
+    };
   }, [matchId]);
 
   return (
@@ -73,9 +130,22 @@ export default function App() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '32px' }}>⚽</span>
           <div>
-            <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 800, letterSpacing: '-0.5px' }} className="gradient-text">
-              DeepKick
-            </h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 800, letterSpacing: '-0.5px' }} className="gradient-text">
+                DeepKick
+              </h1>
+              <span style={{ 
+                fontSize: '11px', 
+                padding: '2px 8px', 
+                borderRadius: '12px', 
+                backgroundColor: wsConnected ? 'rgba(0, 255, 135, 0.1)' : 'rgba(255, 165, 0, 0.1)', 
+                color: wsConnected ? 'var(--color-green)' : 'orange',
+                border: wsConnected ? '1px solid rgba(0, 255, 135, 0.2)' : '1px solid rgba(255, 165, 0, 0.2)',
+                fontWeight: 600
+              }}>
+                {wsConnected ? 'Live Connection' : 'Simulated Feed'}
+              </span>
+            </div>
             <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>AI Football Analytics & World Cup Engine</span>
           </div>
         </div>
@@ -101,6 +171,7 @@ export default function App() {
           </button>
         </div>
       </header>
+
 
       {/* Main Content Area */}
       <main className="dashboard-grid">
