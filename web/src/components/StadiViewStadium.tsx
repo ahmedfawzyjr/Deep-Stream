@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useRef, useEffect, useCallback, useState } from 'react';
+// Static type-only import so TypeScript resolves THREE.* annotations at compile time.
+// The actual runtime module is loaded lazily via `await import('three')` inside initEngine.
+import type * as THREE from 'three';
 import type { SeatInfo } from './SeatPickerPanel';
 
 /* ─────────────────────────────────────────────────────────────
@@ -78,7 +81,7 @@ export default function StadiViewStadium({
     const TAU = Math.PI * 2;
 
     // ── Deterministic RNG ──────────────────────────────────────────
-    function mulberry32(a: number) {
+    const mulberry32 = (a: number) => {
       return function () {
         a |= 0;
         a = (a + 0x6d2b79f5) | 0;
@@ -129,7 +132,7 @@ export default function StadiViewStadium({
     sun.shadow.bias = -0.0005; scene.add(sun);
 
     // ── Geometry Helpers ────────────────────────────────────────────
-    function ringStrip(rx1: number, rz1: number, y1: number, rx2: number, rz2: number, y2: number, seg: number, mat: THREE.Material, repU = 10) {
+    const ringStrip = (rx1: number, rz1: number, y1: number, rx2: number, rz2: number, y2: number, seg: number, mat: THREE.Material, repU = 10) => {
       const pos: number[] = [], uv: number[] = [], idx: number[] = [];
       for (let i = 0; i <= seg; i++) {
         const a = (i / seg) * TAU, c = Math.cos(a), s = Math.sin(a);
@@ -147,7 +150,7 @@ export default function StadiViewStadium({
       const m = new THREE.Mesh(g, mat); m.matrixAutoUpdate = false; return m;
     }
 
-    function mergeBoxes(parts: THREE.BufferGeometry[]) {
+    const mergeBoxes = (parts: THREE.BufferGeometry[]) => {
       const pos: number[] = [], norm: number[] = [];
       for (const g of parts) {
         const gg = g.index ? g.toNonIndexed() : g;
@@ -160,7 +163,7 @@ export default function StadiViewStadium({
       return out;
     }
 
-    function canvasTexture(w: number, h: number, draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => void, repX?: number, repY?: number): THREE.CanvasTexture {
+    const canvasTexture = (w: number, h: number, draw: (ctx: CanvasRenderingContext2D, w: number, h: number) => void, repX?: number, repY?: number): THREE.CanvasTexture => {
       const cv = document.createElement('canvas');
       cv.width = w; cv.height = h;
       draw(cv.getContext('2d')!, w, h);
@@ -367,7 +370,7 @@ export default function StadiViewStadium({
         { shirt: new THREE.MeshLambertMaterial({ color: 0xf2e341, emissive: new THREE.Color(0xf2e341), emissiveIntensity: 0.1 }), shorts: new THREE.MeshLambertMaterial({ color: 0x141414 }) },
       ];
 
-      function mkPlayer(kit: any, gk: boolean) {
+      const mkPlayer = (kit: any, gk: boolean) => {
         const g = new THREE.Group();
         const skin = skinMats[(rng() * skinMats.length) | 0];
         const shirtM = gk && kit.gk ? kit.gk : kit.shirt;
@@ -415,8 +418,8 @@ export default function StadiViewStadium({
 
     // ── Match State Machine ────────────────────────────────────────
     const match = { phase:'hold', holder:5, receiver:6, t:0, dur:1.2, from:new THREE.Vector3(), to:new THREE.Vector3(), arc:0.6, shot:false, celebrate:0, scoredBy:0 };
-    function teamOf(i: number) { return players[i].team; }
-    function startPass(shot: boolean) {
+    const teamOf = (i: number) => players[i].team;
+    const startPass = (shot: boolean) => {
       const h = players[match.holder], team = h.team, dir = team ? -1 : 1;
       match.from.copy(ball.position);
       if (shot) {
@@ -439,8 +442,8 @@ export default function StadiViewStadium({
       const dist = match.from.distanceTo(match.to);
       match.dur = THREE.MathUtils.clamp(dist/(match.shot?26:17), 0.35, 2.4);
       match.t = 0; match.phase = 'fly';
-    }
-    function onBallArrive() {
+    };
+    const onBallArrive = () => {
       if (match.shot) {
         const st = teamOf(match.holder);
         if (rng() < 0.6) {
@@ -597,12 +600,12 @@ export default function StadiViewStadium({
     // ── SEATS (InstancedMesh) ──────────────────────────────────────
     const SEAT_SPACING = 0.58, AISLE = 1.5;
     const RAINBOW = ['#5b21b6','#6d28d9','#7c3aed','#4f46e5','#4338ca','#2563eb','#0284c7','#0ea5e9','#0d9488','#10b981','#22c55e','#65a30d','#a3b60b','#eab308','#f59e0b','#f97316','#ea580c','#dc2626','#b91c1c','#be185d','#9d174d','#7e22ce','#6d28d9','#5b21b6','#4f46e5','#4338ca','#2563eb','#0284c7','#0ea5e9','#10b981','#22c55e','#eab308'];
-    function sectionBaseColor(tier: any, k: number) {
+    const sectionBaseColor = (tier: any, k: number) => {
       if (tier.palette === 'rainbow') return new THREE.Color(RAINBOW[k%RAINBOW.length]);
       if (tier.palette === 'steel') { const c = new THREE.Color(0x2e4a78); c.offsetHSL(((k%5)-2)*0.012, 0, ((k%3)-1)*0.03); return c; }
       const c = new THREE.Color(0x27306a); c.offsetHSL(((k%7)-3)*0.01, 0, ((k%4)-1.5)*0.02); return c;
-    }
-    function arcTable(rx: number, rz: number) {
+    };
+    const arcTable = (rx: number, rz: number) => {
       const N = 1200, s = new Float32Array(N+1), a = new Float32Array(N+1);
       let L = 0, px = rx, pz = 0;
       for (let i = 1; i <= N; i++) {
@@ -610,8 +613,8 @@ export default function StadiViewStadium({
         L += Math.hypot(x-px, z-pz); px = x; pz = z; s[i] = L; a[i] = ang;
       }
       return { L, s, a, N };
-    }
-    function thetaAt(tb: any, dist: number) {
+    };
+    const thetaAt = (tb: any, dist: number) => {
       let lo = 0, hi = tb.N;
       while (lo < hi) { const mid = (lo+hi)>>1; if (tb.s[mid] < dist) lo=mid+1; else hi=mid; }
       const i = Math.max(1,lo), f = (dist-tb.s[i-1])/Math.max(1e-6,tb.s[i]-tb.s[i-1]);
@@ -718,7 +721,7 @@ export default function StadiViewStadium({
       })();
       const headGeo = new THREE.SphereGeometry(0.135,7,5); headGeo.translate(0,1.1,-0.05);
       const torsoMat = new THREE.MeshLambertMaterial(), headMat = new THREE.MeshLambertMaterial();
-      function swayify(mat: THREE.MeshLambertMaterial, amp: string) {
+      const swayify = (mat: THREE.MeshLambertMaterial, amp: string) => {
         mat.onBeforeCompile = (sh: any) => {
           sh.uniforms.uTime = swayU; sh.uniforms.uExcite = exciteU;
           sh.vertexShader = 'uniform float uTime; uniform float uExcite;\n' + sh.vertexShader.replace('#include <begin_vertex>', ['#include <begin_vertex>','float swPh = instanceMatrix[3].x*1.7 + instanceMatrix[3].z*2.3;','float swW = smoothstep(0.35,1.15,position.y)*uExcite;',`transformed.x += sin(uTime*1.7+swPh)*${amp}*swW;`,`transformed.z += cos(uTime*1.25+swPh)*${amp}*0.6*swW;`].join('\n'));
@@ -761,7 +764,7 @@ export default function StadiViewStadium({
     if (loaderTextRef.current) loaderTextRef.current.textContent = `Placing ${SEAT_COUNT.toLocaleString()} seats…`;
 
     // ── Seat Data Helpers ──────────────────────────────────────────
-    function seatScore(i: number) {
+    const seatScore = (i: number) => {
       if (i < 0 || i >= SEAT_COUNT) return 50;
       const x = meta.pos[i*3], y = meta.pos[i*3+1], z = meta.pos[i*3+2];
       const d = Math.hypot(x,z);
@@ -769,8 +772,8 @@ export default function StadiViewStadium({
       const mid = (Math.abs(x)/Math.hypot(x,z))*12;
       const hp = (Math.abs(y-12)/25)*10;
       return Math.round(THREE.MathUtils.clamp(99-dn-mid-hp,45,99));
-    }
-    function seatPrice(i: number, sc: number) {
+    };
+    const seatPrice = (i: number, sc: number) => {
       if (i < 0 || i >= SEAT_COUNT) return 50;
       const secIdx = meta.secIdx[i];
       const sec = sections[secIdx];
@@ -778,8 +781,8 @@ export default function StadiViewStadium({
       const t = sec.tier;
       const f = [(s: number) => 60+s*1.16, (s: number) => 70+s*1.3, (s: number) => 24+s*0.75][t] || ((s: number) => 50+s);
       return Math.round(f(sc));
-    }
-    function seatInfoData(i: number) {
+    };
+    const seatInfoData = (i: number) => {
       if (i < 0 || i >= SEAT_COUNT) return null;
       const secIdx = meta.secIdx[i];
       const sec = sections[secIdx];
@@ -788,7 +791,7 @@ export default function StadiViewStadium({
       const tierObj = TIERS[sec.tier];
       const tierName = tierObj ? tierObj.name : 'Lower Tier';
       return { i, sec, label:sec.label, tier:tierName, row:meta.row[i], seat:meta.seatNum[i], score:sc, price:seatPrice(i,sc), avail:!!meta.avail[i], pos:new THREE.Vector3(meta.pos[i*3],meta.pos[i*3+1],meta.pos[i*3+2]) };
-    }
+    };
 
     let featuredIdx = -1;
     {
@@ -805,7 +808,7 @@ export default function StadiViewStadium({
     // ── GPU Picking ────────────────────────────────────────────────
     const pickRT = new THREE.WebGLRenderTarget(1, 1);
     const pickBuf = new Uint8Array(4);
-    function pickAt(cx: number, cy: number) {
+    const pickAt = (cx: number, cy: number) => {
       const rect = canvas.getBoundingClientRect();
       const nx = cx - rect.left, ny = cy - rect.top;
       const dpr = renderer.getPixelRatio();
@@ -824,21 +827,21 @@ export default function StadiViewStadium({
 
     // ── Seat Color State ───────────────────────────────────────────
     const tmpC = new THREE.Color();
-    function paintSeat(i: number, r: number, g: number, b: number) {
+    const paintSeat = (i: number, r: number, g: number, b: number) => {
       if (i < 0 || i >= SEAT_COUNT) return;
       tmpC.setRGB(r,g,b); seatMesh.setColorAt(i,tmpC);
-    }
-    function restoreSeat(i: number) {
+    };
+    const restoreSeat = (i: number) => {
       if (i < 0 || i >= SEAT_COUNT) return;
       paintSeat(i, baseColors[i*3], baseColors[i*3+1], baseColors[i*3+2]);
-    }
-    function tintRange(start: number, count: number, mul: number) {
+    };
+    const tintRange = (start: number, count: number, mul: number) => {
       const end = Math.min(SEAT_COUNT, start + count);
       for (let i = Math.max(0, start); i < end; i++) paintSeat(i, Math.min(1,baseColors[i*3]*mul), Math.min(1,baseColors[i*3+1]*mul), Math.min(1,baseColors[i*3+2]*mul));
-    }
+    };
     let hoverIdx = -1, hoverSec = -1, selectedIdx = -1;
     const SEL = new THREE.Color(0x67e8f9), HOV = new THREE.Color(0xaef0ff);
-    function applySelection(i: number) {
+    const applySelection = (i: number) => {
       if (selectedIdx >= 0 && selectedIdx < SEAT_COUNT) {
         const oldSecIdx = meta.secIdx[selectedIdx];
         const old = sections[oldSecIdx];
@@ -855,8 +858,8 @@ export default function StadiViewStadium({
       }
       if (seatMesh.instanceColor) seatMesh.instanceColor.needsUpdate = true;
       drawOverviewBase();
-    }
-    function setHover(i: number) {
+    };
+    const setHover = (i: number) => {
       if (i===hoverIdx) return;
       if (hoverIdx>=0 && hoverIdx<SEAT_COUNT && hoverIdx!==selectedIdx) restoreSeat(hoverIdx);
       const newSec = (i>=0 && i<SEAT_COUNT) ? meta.secIdx[i] : -1;
@@ -884,23 +887,23 @@ export default function StadiViewStadium({
     const seatView = { eye:new THREE.Vector3(), yawBase:0, pitchBase:0, yawOff:0, pitchOff:0 };
     let modeStr = 'orbit', is2D = false, userInteracted = false;
 
-    function applyOrbit() {
+    const applyOrbit = () => {
       const sp = Math.sin(orbit.phi);
       camera.position.set(orbit.target.x+orbit.radius*sp*Math.cos(orbit.theta), orbit.target.y+orbit.radius*Math.cos(orbit.phi), orbit.target.z+orbit.radius*sp*Math.sin(orbit.theta));
       camera.lookAt(orbit.target);
-    }
-    function eyeFor(i: number) {
+    };
+    const eyeFor = (i: number) => {
       const p = new THREE.Vector3(meta.pos[i*3], meta.pos[i*3+1], meta.pos[i*3+2]);
       return p.addScaledVector(new THREE.Vector3(-p.x,0,-p.z).normalize(), 0.12).add(new THREE.Vector3(0,1.18,0));
-    }
-    function lookFor(i: number) { return new THREE.Vector3(meta.pos[i*3]*0.06, 1.2, meta.pos[i*3+2]*0.06); }
+    };
+    const lookFor = (i: number) => new THREE.Vector3(meta.pos[i*3]*0.06, 1.2, meta.pos[i*3+2]*0.06);
 
     // ── Toast / Tooltip ────────────────────────────────────────────
     let toastTimer: any;
-    function toast(msg: string, ms = 2600) {
+    const toast = (msg: string, ms = 2600) => {
       if (toastRef.current) { toastRef.current.textContent = msg; toastRef.current.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => toastRef.current?.classList.remove('show'), ms); }
-    }
-    function showTip(x: number, y: number, info: any) {
+    };
+    const showTip = (x: number, y: number, info: any) => {
       if (!tipRef.current || !tip1Ref.current || !tip2Ref.current) return;
       const rect = wrapRef.current!.getBoundingClientRect();
       tip1Ref.current.textContent = `Section ${info.label} · Row ${info.row} · Seat ${info.seat}`;
@@ -908,12 +911,12 @@ export default function StadiViewStadium({
       tipRef.current.style.left = `${Math.min(x-rect.left, W-180)}px`;
       tipRef.current.style.top = `${y-rect.top+12}px`;
       tipRef.current.style.opacity = '1';
-    }
-    function hideTip() { if (tipRef.current) tipRef.current.style.opacity = '0'; }
+    };
+    const hideTip = () => { if (tipRef.current) tipRef.current.style.opacity = '0'; };
 
     // ── Crowd Audio ────────────────────────────────────────────────
     let AC: AudioContext | null = null, crowdGain: GainNode | null = null;
-    function ensureAudio() {
+    const ensureAudio = () => {
       if (AC) return;
       try { AC = new (window.AudioContext || (window as any).webkitAudioContext)(); } catch(e) { return; }
       const buf = AC.createBuffer(1, AC.sampleRate*2, AC.sampleRate);
@@ -926,9 +929,9 @@ export default function StadiViewStadium({
       const lg = AC.createGain(); lg.gain.value = 0.012;
       lfo.connect(lg); lg.connect(crowdGain.gain); lfo.start();
       src.connect(bp); bp.connect(crowdGain); crowdGain.connect(AC.destination); src.start();
-    }
-    function setCrowd(level: number) { if (!AC||!crowdGain) return; crowdGain.gain.cancelScheduledValues(AC.currentTime); crowdGain.gain.linearRampToValueAtTime(level, AC.currentTime+1.4); }
-    function cheers() {
+    };
+    const setCrowd = (level: number) => { if (!AC||!crowdGain) return; crowdGain.gain.cancelScheduledValues(AC.currentTime); crowdGain.gain.linearRampToValueAtTime(level, AC.currentTime+1.4); };
+    const cheers = () => {
       if (!AC) return;
       const buf = AC.createBuffer(1, (AC.sampleRate*1.6)|0, AC.sampleRate);
       const d = buf.getChannelData(0); for (let i=0;i<d.length;i++) d[i]=Math.random()*2-1;
@@ -937,10 +940,10 @@ export default function StadiViewStadium({
       const g = AC.createGain(); const t = AC.currentTime;
       g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.16,t+0.25); g.gain.exponentialRampToValueAtTime(0.0001,t+1.55);
       s.connect(f); f.connect(g); g.connect(AC.destination); s.start();
-    }
+    };
 
     // ── POV Thumbnail Capture ──────────────────────────────────────
-    function captureView(i: number): string {
+    const captureView = (i: number): string => {
       const eye = eyeFor(i), look = lookFor(i);
       const sp = camera.position.clone(), sq = camera.quaternion.clone(), sf = camera.fov;
       camera.position.copy(eye); camera.lookAt(look); camera.fov = 58; camera.updateProjectionMatrix();
@@ -953,7 +956,7 @@ export default function StadiViewStadium({
     }
 
     // ── Flight Animations ──────────────────────────────────────────
-    function enterSeatMode(info: any) {
+    const enterSeatMode = (info: any) => {
       modeStr = 'seat';
       canvas.classList.add('seatmode');
       seatView.eye.copy(eyeFor(info.i));
@@ -978,9 +981,9 @@ export default function StadiViewStadium({
         };
         onSeatSelect(seatData, previewUrl, minimapCanvasRef?.current || null);
       }
-    }
+    };
 
-    function flyToSeat(i: number) {
+    const flyToSeat = (i: number) => {
       const info = seatInfoData(i);
       currentSeatInfo = info;
       setHover(-1); hideTip(); applySelection(i);
@@ -1007,9 +1010,9 @@ export default function StadiViewStadium({
         onComplete() { enterSeatMode(info); },
       });
       ensureAudio(); setCrowd(0.02);
-    }
+    };
 
-    function exitSeatMode() {
+    const exitSeatMode = () => {
       if (modeStr!=='seat') return;
       modeStr = 'fly';
       canvas.classList.remove('seatmode');
@@ -1038,13 +1041,13 @@ export default function StadiViewStadium({
         onComplete() { modeStr = 'orbit'; },
       });
       setCrowd(0.02);
-    }
+    };
 
     // ── Minimap Drawing ────────────────────────────────────────────
     const ovBase = document.createElement('canvas');
     const RXmax = TIERS[2].rxTop+3, RZmax = TIERS[2].rzTop+3;
 
-    function drawOverviewBase() {
+    const drawOverviewBase = () => {
       const cv3 = minimapCanvasRef?.current;
       if (!cv3) return;
       ovBase.width = cv3.width; ovBase.height = cv3.height;
@@ -1075,9 +1078,9 @@ export default function StadiViewStadium({
       x.strokeRect(cx-pw/2+2, cy-ph2/2+2, pw-4, ph2-4);
       x.beginPath(); x.moveTo(cx,cy-ph2/2+2); x.lineTo(cx,cy+ph2/2-2); x.stroke();
       x.beginPath(); x.arc(cx,cy,ph2*0.13,0,TAU); x.stroke();
-    }
+    };
 
-    function drawMinimap() {
+    const drawMinimap = () => {
       const cv3 = minimapCanvasRef?.current;
       if (!cv3) return;
       const x = cv3.getContext('2d')!, W2 = cv3.width, H2 = cv3.height, cx = W2/2, cy = H2/2;
@@ -1098,12 +1101,12 @@ export default function StadiViewStadium({
       x.beginPath(); x.moveTo(px2,py2); x.lineTo(cx,cy); x.strokeStyle='rgba(57,196,255,.35)'; x.lineWidth=2; x.stroke();
       x.beginPath(); x.arc(px2,py2,9,0,TAU); x.fillStyle='#2f9bff'; x.fill();
       x.beginPath(); x.arc(px2,py2,9,0,TAU); x.strokeStyle='rgba(255,255,255,.85)'; x.lineWidth=2; x.stroke();
-    }
+    };
 
     // ── Hover Picking ──────────────────────────────────────────────
     let pendingHover: { x: number; y: number } | null = null;
     let lastPick = 0;
-    function updateHover(now: number) {
+    const updateHover = (now: number) => {
       if (modeStr!=='orbit' || !pendingHover || now-lastPick < 60) return;
       lastPick = now;
       const { x, y } = pendingHover; pendingHover = null;
@@ -1111,12 +1114,12 @@ export default function StadiViewStadium({
       setHover(idx);
       if (idx>=0) { showTip(x,y,seatInfoData(idx)); canvas.style.cursor='pointer'; }
       else { hideTip(); canvas.style.cursor=''; }
-    }
+    };
 
     // ── Match Update ───────────────────────────────────────────────
     const V3 = new THREE.Vector3(), FWD = new THREE.Vector3();
     let lastMinDraw = -1;
-    function updateMatch(t: number, dt: number) {
+    const updateMatch = (t: number, dt: number) => {
       swayU.value = t; exciteU.value += (1-exciteU.value)*Math.min(1,dt*0.55);
       match.celebrate = Math.max(0, match.celebrate-dt);
       // Sync external score/minute
@@ -1165,23 +1168,23 @@ export default function StadiViewStadium({
     const pointers = new Map<number, { x: number; y: number }>();
     let dragStart: { x: number; y: number; t: number } | null = null, dragMoved = 0, pinchDist = 0;
 
-    function onPointerDown(e: PointerEvent) {
+    const onPointerDown = (e: PointerEvent) => {
       canvas.setPointerCapture(e.pointerId);
       pointers.set(e.pointerId, { x:e.clientX, y:e.clientY });
       dragStart = { x:e.clientX, y:e.clientY, t:performance.now() }; dragMoved = 0;
-      if (pointers.size===2) { const p=[...pointers.values()]; pinchDist=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y); }
+      if (pointers.size===2) { const p=Array.from(pointers.values()); pinchDist=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y); }
       userInteracted = true; canvas.classList.add('dragging');
-    }
-    function onPointerMove(e: PointerEvent) {
+    };
+    const onPointerMove = (e: PointerEvent) => {
       if (!pointers.has(e.pointerId)) { if (modeStr==='orbit') pendingHover={x:e.clientX,y:e.clientY}; return; }
       const prev = pointers.get(e.pointerId)!;
       const dx=e.clientX-prev.x, dy=e.clientY-prev.y;
       pointers.set(e.pointerId, { x:e.clientX, y:e.clientY }); dragMoved+=Math.abs(dx)+Math.abs(dy);
-      if (pointers.size===2) { const p=[...pointers.values()]; const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y); if (pinchDist>0&&modeStr==='orbit') orbit.radiusT=THREE.MathUtils.clamp(orbit.radiusT*(pinchDist/d),60,360); pinchDist=d; return; }
+      if (pointers.size===2) { const p=Array.from(pointers.values()); const d=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y); if (pinchDist>0&&modeStr==='orbit') orbit.radiusT=THREE.MathUtils.clamp(orbit.radiusT*(pinchDist/d),60,360); pinchDist=d; return; }
       if (modeStr==='orbit') { orbit.thetaT-=dx*0.0045; orbit.phiT=THREE.MathUtils.clamp(orbit.phiT-dy*0.003,0.14,1.46); hideTip(); }
       else if (modeStr==='seat') { seatView.yawOff=THREE.MathUtils.clamp(seatView.yawOff-dx*0.0032,-1.5,1.5); seatView.pitchOff=THREE.MathUtils.clamp(seatView.pitchOff+dy*0.0024,-0.55,0.55); }
-    }
-    function onPointerUp(e: PointerEvent) {
+    };
+    const onPointerUp = (e: PointerEvent) => {
       canvas.classList.remove('dragging');
       if (!pointers.has(e.pointerId)) return;
       pointers.delete(e.pointerId); pinchDist=0;
@@ -1198,16 +1201,16 @@ export default function StadiViewStadium({
         }
       }
       dragStart=null;
-    }
-    function onWheel(e: WheelEvent) {
+    };
+    const onWheel = (e: WheelEvent) => {
       e.preventDefault(); userInteracted=true;
       if (modeStr==='orbit') orbit.radiusT=THREE.MathUtils.clamp(orbit.radiusT*(1+e.deltaY*0.0011),60,360);
       else if (modeStr==='seat') { camera.fov=THREE.MathUtils.clamp(camera.fov+e.deltaY*0.02,28,68); camera.updateProjectionMatrix(); }
-    }
-    function onKeyDown(e: KeyboardEvent) {
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
       if (e.key==='Escape'&&modeStr==='seat') exitSeatMode();
       if (modeStr==='orbit') { userInteracted=true; const d: Record<string,()=>void> = { ArrowLeft:()=>orbit.thetaT+=0.12, ArrowRight:()=>orbit.thetaT-=0.12, ArrowUp:()=>orbit.phiT=Math.max(0.14,orbit.phiT-0.08), ArrowDown:()=>orbit.phiT=Math.min(1.46,orbit.phiT+0.08) }; d[e.key]?.(); }
-    }
+    };
 
     canvas.addEventListener('pointerdown', onPointerDown);
     canvas.addEventListener('pointermove', onPointerMove);
@@ -1226,19 +1229,19 @@ export default function StadiViewStadium({
 
     // ── FPS Adaptation ────────────────────────────────────────────
     let fpsAcc=0, fpsN=0, fpsCheck=0;
-    function adaptQuality(dt: number, now: number) {
+    const adaptQuality = (dt: number, now: number) => {
       fpsAcc+=dt; fpsN++;
       if (now-fpsCheck<2500) return; fpsCheck=now;
       const fps=fpsN/Math.max(1e-4,fpsAcc); fpsAcc=0; fpsN=0;
       const pr=renderer.getPixelRatio();
       if (fps<40&&pr>0.75) renderer.setPixelRatio(Math.max(0.75,pr-0.25));
       else if (fps>75&&pr<Math.min(2,window.devicePixelRatio)) renderer.setPixelRatio(Math.min(2,window.devicePixelRatio,pr+0.25));
-    }
+    };
 
     // ── Main Loop ─────────────────────────────────────────────────
     const clock = new THREE.Clock();
     let firstFrame = true, animFrameId = 0;
-    function animate() {
+    const animate = () => {
       animFrameId = requestAnimationFrame(animate);
       const dt=Math.min(0.05,clock.getDelta()), t=clock.elapsedTime, now=performance.now();
       for (const a of animatedTextures) a.t.offset.x += a.speed*dt*10;
