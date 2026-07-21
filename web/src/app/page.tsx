@@ -35,6 +35,7 @@ import StadiViewStadium from '../components/StadiViewStadium';
 import SeatPickerPanel, { type SeatInfo } from '../components/SeatPickerPanel';
 import MatchAnalyticsBar from '../components/MatchAnalyticsBar';
 import DeepAssistant from '../components/DeepAssistant';
+import AudioVoiceControl from '../components/AudioVoiceControl';
 
 import {
   playWhistleSound,
@@ -319,6 +320,9 @@ export default function Home() {
                   </div>
                   <Stadium3D />
                 </div>
+
+                {/* Multilingual Stadium Voice & Soundboard */}
+                <AudioVoiceControl />
 
                 {/* D3 Momentum Chart */}
                 <div className="glass-panel glass-panel-glow-blue" style={{ padding: '24px' }}>
