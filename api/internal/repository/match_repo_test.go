@@ -21,30 +21,36 @@ func TestMatchRepository_Integration(t *testing.T) {
 	}
 
 	ctx := context.Background()
+	var connStr string
 
-	dbName := "deepstream_test"
-	dbUser := "postgres"
-	dbPassword := "postgres"
+	envDB := os.Getenv("DATABASE_URL")
+	if envDB != "" {
+		connStr = envDB
+	} else {
+		dbName := "deepstream_test"
+		dbUser := "postgres"
+		dbPassword := "postgres"
 
-	postgresContainer, err := postgres.RunContainer(ctx,
-		testcontainers.WithImage("postgres:16-alpine"),
-		postgres.WithDatabase(dbName),
-		postgres.WithUsername(dbUser),
-		postgres.WithPassword(dbPassword),
-		testcontainers.WithWaitSpec(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(60*time.Second)),
-	)
-	if err != nil {
-		t.Fatalf("failed to start postgres container: %v", err)
-	}
-	defer func() {
-		if err := postgresContainer.Terminate(ctx); err != nil {
-			t.Fatalf("failed to terminate container: %v", err)
+		postgresContainer, err := postgres.RunContainer(ctx,
+			testcontainers.WithImage("postgres:16-alpine"),
+			postgres.WithDatabase(dbName),
+			postgres.WithUsername(dbUser),
+			postgres.WithPassword(dbPassword),
+			testcontainers.WithWaitSpec(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(60*time.Second)),
+		)
+		if err != nil {
+			t.Skipf("skipping test: failed to start postgres container: %v", err)
+			return
 		}
-	}()
+		defer func() {
+			_ = postgresContainer.Terminate(ctx)
+		}()
 
-	connStr, err := postgresContainer.ConnectionString(ctx, "sslmode=disable")
-	if err != nil {
-		t.Fatalf("failed to get connection string: %v", err)
+		cs, err := postgresContainer.ConnectionString(ctx, "sslmode=disable")
+		if err != nil {
+			t.Fatalf("failed to get connection string: %v", err)
+		}
+		connStr = cs
 	}
 
 	conn, err := pgx.Connect(ctx, connStr)
