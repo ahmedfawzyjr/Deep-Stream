@@ -17,7 +17,9 @@ import {
   Gauge,
   Volume2,
   VolumeX,
-  Landmark
+  Landmark,
+  Eye,
+  Layers
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -36,6 +38,15 @@ import SeatPickerPanel, { type SeatInfo } from '../components/SeatPickerPanel';
 import MatchAnalyticsBar from '../components/MatchAnalyticsBar';
 import DeepAssistant from '../components/DeepAssistant';
 import AudioVoiceControl from '../components/AudioVoiceControl';
+import ESPNMatchSelector from '../components/ESPNMatchSelector';
+
+import {
+  fetchLiveSoccerMatches,
+  fetchMatchPlays,
+  ESPNMatch,
+  ESPNPlay,
+  FALLBACK_MATCHES
+} from '../services/espnApi';
 
 import {
   playWhistleSound,
@@ -44,33 +55,23 @@ import {
   stopStadiumAmbient
 } from '../utils/audio';
 
-
-interface MatchState {
-  match_id: string;
-  win_probability: number;
-  draw_probability: number;
-  loss_probability: number;
-  minute: number;
-  xg: {
-    team_a: number;
-    team_b: number;
-  };
-  momentum: number;
-}
-
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<string>("live");
+  const [activeTab, setActiveTab] = useState<string>("stadium"); // Merged primary hub is Stadium View
+  const [viewPerspective, setViewPerspective] = useState<'stadium3d' | 'pitch3d'>('stadium3d');
   const [soundEnabled, setSoundEnabled] = useState<boolean>(false);
+
+  // ESPN API States
+  const [matches, setMatches] = useState<ESPNMatch[]>(FALLBACK_MATCHES);
+  const [selectedMatch, setSelectedMatch] = useState<ESPNMatch>(FALLBACK_MATCHES[0]);
+  const [selectedLeague, setSelectedLeague] = useState<string>('all');
+  const [loadingESPN, setLoadingESPN] = useState<boolean>(false);
+  const [matchPlays, setMatchPlays] = useState<ESPNPlay[]>([]);
 
   // Stadium View state
   const [selectedSeat, setSelectedSeat] = useState<SeatInfo | null>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
 
-  const [scoreHome] = useState(2);
-  const [scoreAway] = useState(1);
-  const xgHome = 1.65;
-  const xgAway = 0.98;
-
+  // Sound Handler
   const toggleSound = () => {
     if (soundEnabled) {
       stopStadiumAmbient();
@@ -86,77 +87,86 @@ export default function Home() {
     setActiveTab(tab);
     if (soundEnabled) {
       playClickChime();
-      if (tab === "live") {
+      if (tab === "stadium") {
         setTimeout(() => {
           playWhistleSound();
         }, 150);
       }
     }
   };
-  
+
+  // Load ESPN Matches
+  const loadMatches = async (league: string = selectedLeague) => {
+    setLoadingESPN(true);
+    try {
+      const data = await fetchLiveSoccerMatches(league);
+      if (data && data.length > 0) {
+        setMatches(data);
+        // Retain selected match if still in list, else pick first
+        const current = data.find(m => m.id === selectedMatch?.id);
+        if (current) {
+          setSelectedMatch(current);
+        } else {
+          setSelectedMatch(data[0]);
+        }
+      }
+    } catch (err) {
+      console.warn('ESPN Fetch error:', err);
+    } finally {
+      setLoadingESPN(false);
+    }
+  };
+
+  // Initial load + periodic polling for live ESPN scores
+  useEffect(() => {
+    loadMatches(selectedLeague);
+    const interval = setInterval(() => {
+      loadMatches(selectedLeague);
+    }, 15000); // 15s refresh
+    return () => clearInterval(interval);
+  }, [selectedLeague]);
+
+  // Load play-by-play events whenever selected match changes
+  useEffect(() => {
+    if (selectedMatch) {
+      fetchMatchPlays(selectedMatch.id, selectedMatch.league)
+        .then(plays => setMatchPlays(plays))
+        .catch(() => setMatchPlays([]));
+    }
+  }, [selectedMatch?.id]);
+
   // Bayesian Simulator States
-  const [argentinaForm, setArgentinaForm] = useState<number>(85);
-  const [franceForm, setFranceForm] = useState<number>(81);
+  const [teamAForm, setTeamAForm] = useState<number>(85);
+  const [teamBForm, setTeamBForm] = useState<number>(81);
   const [tacticalIndex, setTacticalIndex] = useState<number>(55);
   const [staminaIndex, setStaminaIndex] = useState<number>(88);
   const [crowdFactor, setCrowdFactor] = useState<number>(75);
   const [weatherImpact, setWeatherImpact] = useState<number>(68);
 
-  // Probabilities derived dynamically from parametric inputs
-  const [probabilities, setProbabilities] = useState({ win: 0.49, draw: 0.27, loss: 0.24 });
+  // Derived probabilities
+  const winProb = selectedMatch?.probabilities.win ?? 0.49;
+  const drawProb = selectedMatch?.probabilities.draw ?? 0.27;
+  const lossProb = selectedMatch?.probabilities.loss ?? 0.24;
 
-  // Ticker Alert Messages
+  // Minute counter auto-advance
+  const minute = selectedMatch?.minute ?? 42;
+
+  // Dynamic Ticker Alert Messages based on selected ESPN match
   const tickerAlerts = [
-    "🔥 SPATIAL UPDATE: Argentina threat index increased by +12.4% in the penalty box.",
-    "📊 LIVE ESTIMATE: Expected Goals (xG) calibration matches 1M simulated Monte Carlo iterations.",
-    "⚠️ PLAYER WARNING: France defensive line stamina levels falling below 70% baseline.",
-    "🏟️ STADIUM VIEW: Click any seat in the Stadium View tab to preview the match from your vantage point.",
-    "💡 OPTIMIZATION TIP: Click 'Model Simulator' inside the bracket to view deep feature explainability models.",
-    "🏆 HISTORIC RATIO: Meta-learner models predict a 73.4% chance of penalty shootouts in tie scenarios.",
-    "📍 STADIUM LIVE: 45,732 fans in attendance. Section 101–132 (Lower Tier) at 96% capacity."
+    `🔥 REAL-TIME STREAM: ${selectedMatch?.name ?? 'Live Match'} live score updated from ESPN endpoint.`,
+    `🏟️ VENUE TELEMETRY: ${selectedMatch?.venueName ?? 'Stadium'} hosting ${selectedMatch?.homeTeam.displayName} vs ${selectedMatch?.awayTeam.displayName}.`,
+    `📊 xG CALIBRATION: ${selectedMatch?.homeTeam.displayName} xG at ${selectedMatch?.homeTeam.xg ?? 1.65} vs ${selectedMatch?.awayTeam.displayName} xG at ${selectedMatch?.awayTeam.xg ?? 0.98}.`,
+    `📍 SEAT PICKER: Hover or click any seat in 3D Stadium perspective to inspect 360 camera vantage points.`,
+    `💡 TACTICAL AI: Pressing intensity index calculated at 8.4 (High Overload) for ${selectedMatch?.homeTeam.displayName}.`
   ];
   const [tickerIndex, setTickerIndex] = useState(0);
 
-  // Rotate ticker messages
   useEffect(() => {
     const timer = setInterval(() => {
       setTickerIndex(prev => (prev + 1) % tickerAlerts.length);
     }, 6000);
     return () => clearInterval(timer);
-  }, []);
-
-  // Update probabilities dynamically based on Bayesian sliders
-  useEffect(() => {
-    // Basic dynamic probability simulator formula
-    const formDiff = (argentinaForm - franceForm) / 150;
-    const possessionOffset = (tacticalIndex - 50) / 100;
-    const staminaOffset = (staminaIndex - 80) / 200;
-    const crowdOffset = (crowdFactor - 50) / 250;
-    const weatherOffset = (weatherImpact - 50) / 300;
-
-    let win = 0.45 + formDiff + possessionOffset + staminaOffset + crowdOffset + weatherOffset;
-    let loss = 0.30 - formDiff - possessionOffset - (staminaOffset * 0.5) - (crowdOffset * 0.5) - weatherOffset;
-
-    // Boundary constraints
-    win = Math.max(0.1, Math.min(0.85, win));
-    loss = Math.max(0.1, Math.min(0.85, loss));
-    const draw = 1.0 - win - loss;
-
-    setProbabilities({
-      win: Number(win.toFixed(3)),
-      draw: Number(draw.toFixed(3)),
-      loss: Number(loss.toFixed(3))
-    });
-  }, [argentinaForm, franceForm, tacticalIndex, staminaIndex, crowdFactor, weatherImpact]);
-
-  // Live minute counter
-  const [minute, setMinute] = useState(42);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setMinute(prev => (prev >= 90 ? 1 : prev + 1));
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  }, [tickerAlerts.length]);
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-primary)', color: 'var(--text-primary)' }}>
@@ -164,7 +174,7 @@ export default function Home() {
       {/* Live Cyber Ticker */}
       <div style={{ backgroundColor: 'rgba(0, 255, 135, 0.04)', borderBottom: '1px solid rgba(0, 255, 135, 0.1)', padding: '10px 24px', display: 'flex', alignItems: 'center', gap: '12px' }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--color-green)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>
-          <span className="pulse-live" /> AI Live Stream
+          <span className="pulse-live" /> ESPN Live Stream
         </span>
         <div style={{ overflow: 'hidden', whiteSpace: 'nowrap', fontSize: '12px', color: 'var(--text-secondary)' }}>
           <AnimatePresence mode="wait">
@@ -183,7 +193,7 @@ export default function Home() {
       </div>
 
       {/* Premium Glassmorphic Header */}
-      <header className="glass-panel main-header">
+      <header className="glass-panel main-header" style={{ padding: '16px 24px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <motion.img 
             src="/logo.png" 
@@ -195,7 +205,7 @@ export default function Home() {
             <h1 style={{ margin: 0, fontSize: '26px', fontWeight: 800, letterSpacing: '-0.5px' }} className="gradient-text">
               DeepKick
             </h1>
-            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>AI Football Analytics & 2026 World Cup Engine</span>
+            <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>Unified AI Football Engine & Real ESPN Live Stream</span>
           </div>
         </div>
         
@@ -210,16 +220,10 @@ export default function Home() {
             {soundEnabled ? "Sound On" : "Sound Off"}
           </button>
           <button 
-            onClick={() => handleTabChange("live")}
-            className={`nav-tab ${activeTab === 'live' ? 'active' : ''}`}
-          >
-            <Flame size={16} /> Live Match
-          </button>
-          <button 
             onClick={() => handleTabChange("stadium")}
             className={`nav-tab nav-tab-stadium ${activeTab === 'stadium' ? 'active' : ''}`}
           >
-            <Landmark size={16} /> Stadium View
+            <Landmark size={16} /> Stadium View & Live Match
           </button>
           <button 
             onClick={() => handleTabChange("bracket")}
@@ -230,7 +234,7 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Grid View */}
+      {/* Main Content Area */}
       <main className="dashboard-grid">
         <AnimatePresence mode="wait">
           {activeTab === "stadium" ? (
@@ -239,276 +243,274 @@ export default function Home() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
-              style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '20px' }}
+              style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}
             >
-              {/* Match Analytics Bar — shared live context */}
-              <MatchAnalyticsBar
-                minute={minute}
-                scoreHome={scoreHome}
-                scoreAway={scoreAway}
-                xgHome={xgHome}
-                xgAway={xgAway}
-                winProb={probabilities.win}
-                drawProb={probabilities.draw}
-                lossProb={probabilities.loss}
+              {/* ESPN Match Selector Header */}
+              <ESPNMatchSelector
+                selectedMatch={selectedMatch}
+                matches={matches}
+                onSelectMatch={(m) => setSelectedMatch(m)}
+                onRefresh={() => loadMatches(selectedLeague)}
+                selectedLeague={selectedLeague}
+                onSelectLeague={(leg) => setSelectedLeague(leg)}
+                loading={loadingESPN}
               />
 
-              {/* Stadium 3D + Seat Panel */}
-              <div className="stadium-view-grid">
-                {/* 3D Stadium Canvas */}
-                <StadiViewStadium
-                  minute={minute}
-                  scoreHome={scoreHome}
-                  scoreAway={scoreAway}
-                  matchTitle="ARGENTINA VS SPAIN"
-                  homeTeamCode="ARG"
-                  awayTeamCode="ESP"
-                  minimapCanvasRef={minimapRef}
-                  onSeatSelect={(info) => setSelectedSeat(info)}
-                />
+              {/* Shared Live Analytics Bar */}
+              <MatchAnalyticsBar
+                minute={minute}
+                scoreHome={selectedMatch.homeTeam.score}
+                scoreAway={selectedMatch.awayTeam.score}
+                xgHome={selectedMatch.homeTeam.xg ?? 1.65}
+                xgAway={selectedMatch.awayTeam.xg ?? 0.98}
+                winProb={winProb}
+                drawProb={drawProb}
+                lossProb={lossProb}
+                homeTeam={selectedMatch.homeTeam.displayName}
+                awayTeam={selectedMatch.awayTeam.displayName}
+                homeFlag={selectedMatch.homeTeam.flagEmoji}
+                awayFlag={selectedMatch.awayTeam.flagEmoji}
+                homeLogo={selectedMatch.homeTeam.logo}
+                awayLogo={selectedMatch.awayTeam.logo}
+                venueName={selectedMatch.venueName}
+              />
 
-                {/* Seat Picker Panel */}
-                <SeatPickerPanel
-                  seatInfo={selectedSeat}
-                  minimapRef={minimapRef}
-                  onCheckout={(info) => {
-                    if (soundEnabled) playWhistleSound();
-                  }}
-                  onViewAnalytics={() => handleTabChange('live')}
-                />
-              </div>
-
-              {/* Section info footer */}
-              <div className="glass-panel" style={{ padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+              {/* View Perspective Toggle Bar */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', background: 'rgba(0,0,0,0.25)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <Landmark size={18} color="var(--color-gold)" />
-                  <span style={{ fontWeight: 800, fontSize: '14px' }}>Estadio Metropolitano · Madrid, Spain</span>
-                  <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Capacity: 67,829</span>
+                  <Eye size={18} color="var(--color-green)" />
+                  <span style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Visual Telemetry Mode
+                  </span>
                 </div>
+
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  {[
-                    { label: 'Lower Tier', color: 'var(--color-blue)', sections: '101–132' },
-                    { label: 'Club Tier', color: 'var(--color-gold)', sections: '201–224' },
-                    { label: 'Upper Tier', color: 'var(--text-muted)', sections: '301–332' },
-                  ].map(tier => (
-                    <div key={tier.label} style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 10px', borderRadius: '8px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', fontSize: '12px', fontWeight: 700 }}>
-                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: tier.color, display: 'inline-block' }} />
-                      {tier.label} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>{tier.sections}</span>
-                    </div>
-                  ))}
+                  <button
+                    onClick={() => setViewPerspective('stadium3d')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      border: viewPerspective === 'stadium3d' ? '1px solid var(--color-green)' : '1px solid rgba(255,255,255,0.1)',
+                      background: viewPerspective === 'stadium3d' ? 'rgba(0, 255, 135, 0.15)' : 'rgba(255,255,255,0.03)',
+                      color: viewPerspective === 'stadium3d' ? 'var(--color-green)' : 'var(--text-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <Landmark size={14} /> 3D Stadium Seats View
+                  </button>
+
+                  <button
+                    onClick={() => setViewPerspective('pitch3d')}
+                    style={{
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      border: viewPerspective === 'pitch3d' ? '1px solid var(--color-blue)' : '1px solid rgba(255,255,255,0.1)',
+                      background: viewPerspective === 'pitch3d' ? 'rgba(0, 229, 255, 0.15)' : 'rgba(255,255,255,0.03)',
+                      color: viewPerspective === 'pitch3d' ? 'var(--color-blue)' : 'var(--text-secondary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    <MapPin size={14} /> 3D Tactical Pitch View
+                  </button>
                 </div>
               </div>
-            </motion.div>
-          ) : activeTab === "live" ? (
-            <motion.div 
-              key="live-tab"
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              style={{ display: 'grid', gridTemplateColumns: 'inherit', gap: '28px', gridColumn: '1 / -1' }}
-            >
-              {/* Left Side: 3D view and D3 momentum */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
-                
-                {/* 3D Pitch canvas container */}
+
+              {/* Main 3D Perspective Panel */}
+              {viewPerspective === 'stadium3d' ? (
+                <div className="stadium-view-grid">
+                  {/* Procedural 3D Stadium Canvas */}
+                  <StadiViewStadium
+                    minute={minute}
+                    scoreHome={selectedMatch.homeTeam.score}
+                    scoreAway={selectedMatch.awayTeam.score}
+                    matchTitle={selectedMatch.name.toUpperCase()}
+                    homeTeamCode={selectedMatch.homeTeam.abbreviation}
+                    awayTeamCode={selectedMatch.awayTeam.abbreviation}
+                    minimapCanvasRef={minimapRef}
+                    onSeatSelect={(info) => setSelectedSeat(info)}
+                  />
+
+                  {/* Interactive Seat Picker Panel */}
+                  <SeatPickerPanel
+                    seatInfo={selectedSeat}
+                    minimapRef={minimapRef}
+                    onCheckout={(info) => {
+                      if (soundEnabled) playWhistleSound();
+                    }}
+                    onViewAnalytics={() => setViewPerspective('pitch3d')}
+                  />
+                </div>
+              ) : (
                 <div className="glass-panel glass-panel-glow-green" style={{ padding: '24px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                     <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: 800 }}>
-                      <MapPin size={20} color="var(--color-green)" /> MetLife Stadium Pitch (3D Spatial Telemetry)
+                      <MapPin size={20} color="var(--color-green)" /> {selectedMatch.venueName} (3D Tactical Pitch Telemetry)
                     </h3>
                     <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600 }}>Real-time location stream</span>
                   </div>
                   <Stadium3D />
                 </div>
+              )}
 
-                {/* Multilingual Stadium Voice & Soundboard */}
-                <AudioVoiceControl />
+              {/* Multilingual Stadium Voice & Soundboard */}
+              <AudioVoiceControl />
 
-                {/* D3 Momentum Chart */}
-                <div className="glass-panel glass-panel-glow-blue" style={{ padding: '24px' }}>
-                  <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: 800 }}>
-                    <TrendingUp size={20} color="var(--color-blue)" /> Dynamic Attack Momentum Vector
-                  </h3>
-                  <D3MomentumChart minute={minute} />
-                </div>
-
-                {/* Bayesian Calibration Sliders */}
-                <div className="glass-panel" style={{ padding: '24px' }}>
-                  <h3 style={{ margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: 800 }}>
-                    <Compass size={20} color="var(--color-green)" /> Bayesian Inference Calibration
-                  </h3>
-                  <LiveCalibration 
-                    argentinaForm={argentinaForm}
-                    setArgentinaForm={setArgentinaForm}
-                    franceForm={franceForm}
-                    setFranceForm={setFranceForm}
-                    tacticalIndex={tacticalIndex}
-                    setTacticalIndex={setTacticalIndex}
-                    staminaIndex={staminaIndex}
-                    setStaminaIndex={setStaminaIndex}
-                    crowdFactor={crowdFactor}
-                    setCrowdFactor={setCrowdFactor}
-                    weatherImpact={weatherImpact}
-                    setWeatherImpact={setWeatherImpact}
-                    winProb={probabilities.win}
-                    drawProb={probabilities.draw}
-                    lossProb={probabilities.loss}
-                  />
-                </div>
-
-                {/* SHAP Radar Chart Explainability */}
-                <div className="glass-panel" style={{ padding: '24px' }}>
-                  <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: 800 }}>
-                    <Activity size={20} color="var(--color-blue)" /> SHAP Explainability Vector
-                  </h3>
-                  <ShapRadar
-                    argentinaForm={argentinaForm}
-                    franceForm={franceForm}
-                    tacticalIndex={tacticalIndex}
-                    staminaIndex={staminaIndex}
-                    crowdFactor={crowdFactor}
-                    weatherImpact={weatherImpact}
-                  />
-                </div>
-
-                {/* Passing Network */}
-                <div className="glass-panel" style={{ padding: '24px' }}>
-                  <PassingNetwork />
-                </div>
-              </div>
-
-              {/* Right Side: Prediction Bars */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+              {/* Analytics Grid: Left & Right Split */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '24px' }}>
                 
-                {/* Real-time Probability Breakdown */}
-                <div className="glass-panel" style={{ padding: '24px' }}>
-                  <h3 style={{ margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: 800 }}>
-                    <Sparkles size={20} color="var(--color-green)" /> Live Calibrated Probability
-                  </h3>
+                {/* Left Column: Tactical Vectors & Explainability */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  
+                  {/* D3 Momentum Chart */}
+                  <div className="glass-panel glass-panel-glow-blue" style={{ padding: '24px' }}>
+                    <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: 800 }}>
+                      <TrendingUp size={20} color="var(--color-blue)" /> Dynamic Attack Momentum Vector
+                    </h3>
+                    <D3MomentumChart minute={minute} />
+                  </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
-                        <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>🇦🇷 Argentina Win</span>
-                        <span style={{ color: 'var(--color-blue)', fontWeight: 800, fontSize: '15px' }}>{(probabilities.win * 100).toFixed(1)}%</span>
-                      </div>
-                      <div style={{ height: '10px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '5px', overflow: 'hidden' }}>
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${probabilities.win * 100}%` }}
-                          transition={{ duration: 0.4, ease: 'easeOut' }}
-                          style={{ height: '100%', backgroundColor: 'var(--color-blue)', boxShadow: '0 0 10px rgba(0, 229, 255, 0.4)' }} 
-                        />
-                      </div>
-                    </div>
+                  {/* Bayesian Calibration Sliders */}
+                  <div className="glass-panel" style={{ padding: '24px' }}>
+                    <h3 style={{ margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: 800 }}>
+                      <Compass size={20} color="var(--color-green)" /> Bayesian Inference Calibration
+                    </h3>
+                    <LiveCalibration 
+                      argentinaForm={teamAForm}
+                      setArgentinaForm={setTeamAForm}
+                      franceForm={teamBForm}
+                      setFranceForm={setTeamBForm}
+                      tacticalIndex={tacticalIndex}
+                      setTacticalIndex={setTacticalIndex}
+                      staminaIndex={staminaIndex}
+                      setStaminaIndex={setStaminaIndex}
+                      crowdFactor={crowdFactor}
+                      setCrowdFactor={setCrowdFactor}
+                      weatherImpact={weatherImpact}
+                      setWeatherImpact={setWeatherImpact}
+                      winProb={winProb}
+                      drawProb={drawProb}
+                      lossProb={lossProb}
+                    />
+                  </div>
 
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
-                        <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>🤝 Draw Prediction</span>
-                        <span style={{ color: 'var(--color-green)', fontWeight: 800, fontSize: '15px' }}>{(probabilities.draw * 100).toFixed(1)}%</span>
-                      </div>
-                      <div style={{ height: '10px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '5px', overflow: 'hidden' }}>
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${probabilities.draw * 100}%` }}
-                          transition={{ duration: 0.4, ease: 'easeOut' }}
-                          style={{ height: '100%', backgroundColor: 'var(--color-green)', boxShadow: '0 0 10px rgba(0, 255, 135, 0.4)' }} 
-                        />
-                      </div>
-                    </div>
+                  {/* SHAP Radar Chart */}
+                  <div className="glass-panel" style={{ padding: '24px' }}>
+                    <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: 800 }}>
+                      <Activity size={20} color="var(--color-blue)" /> SHAP Explainability Vector
+                    </h3>
+                    <ShapRadar
+                      argentinaForm={teamAForm}
+                      franceForm={teamBForm}
+                      tacticalIndex={tacticalIndex}
+                      staminaIndex={staminaIndex}
+                      crowdFactor={crowdFactor}
+                      weatherImpact={weatherImpact}
+                    />
+                  </div>
 
-                    <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
-                        <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>🇫🇷 France Win</span>
-                        <span style={{ color: 'var(--color-purple)', fontWeight: 800, fontSize: '15px' }}>{(probabilities.loss * 100).toFixed(1)}%</span>
+                  {/* Passing Network */}
+                  <div className="glass-panel" style={{ padding: '24px' }}>
+                    <PassingNetwork />
+                  </div>
+                </div>
+
+                {/* Right Column: Probabilities, Plays & AI Assistant */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                  
+                  {/* Win Probability Breakdown */}
+                  <div className="glass-panel" style={{ padding: '24px' }}>
+                    <h3 style={{ margin: '0 0 20px 0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: 800 }}>
+                      <Sparkles size={20} color="var(--color-green)" /> Live Win Probability breakdown
+                    </h3>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
+                          <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {selectedMatch.homeTeam.flagEmoji} {selectedMatch.homeTeam.displayName} Win
+                          </span>
+                          <span style={{ color: 'var(--color-blue)', fontWeight: 800, fontSize: '15px' }}>{(winProb * 100).toFixed(1)}%</span>
+                        </div>
+                        <div style={{ height: '10px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '5px', overflow: 'hidden' }}>
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${winProb * 100}%` }}
+                            transition={{ duration: 0.4, ease: 'easeOut' }}
+                            style={{ height: '100%', backgroundColor: 'var(--color-blue)', boxShadow: '0 0 10px rgba(0, 229, 255, 0.4)' }} 
+                          />
+                        </div>
                       </div>
-                      <div style={{ height: '10px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '5px', overflow: 'hidden' }}>
-                        <motion.div 
-                          initial={{ width: 0 }}
-                          animate={{ width: `${probabilities.loss * 100}%` }}
-                          transition={{ duration: 0.4, ease: 'easeOut' }}
-                          style={{ height: '100%', backgroundColor: 'var(--color-purple)', boxShadow: '0 0 10px rgba(138, 43, 226, 0.4)' }} 
-                        />
+
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
+                          <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>🤝 Draw Prediction</span>
+                          <span style={{ color: 'var(--color-green)', fontWeight: 800, fontSize: '15px' }}>{(drawProb * 100).toFixed(1)}%</span>
+                        </div>
+                        <div style={{ height: '10px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '5px', overflow: 'hidden' }}>
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${drawProb * 100}%` }}
+                            transition={{ duration: 0.4, ease: 'easeOut' }}
+                            style={{ height: '100%', backgroundColor: 'var(--color-green)', boxShadow: '0 0 10px rgba(0, 255, 135, 0.4)' }} 
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
+                          <span style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            {selectedMatch.awayTeam.flagEmoji} {selectedMatch.awayTeam.displayName} Win
+                          </span>
+                          <span style={{ color: 'var(--color-purple)', fontWeight: 800, fontSize: '15px' }}>{(lossProb * 100).toFixed(1)}%</span>
+                        </div>
+                        <div style={{ height: '10px', backgroundColor: 'rgba(255,255,255,0.03)', borderRadius: '5px', overflow: 'hidden' }}>
+                          <motion.div 
+                            initial={{ width: 0 }}
+                            animate={{ width: `${lossProb * 100}%` }}
+                            transition={{ duration: 0.4, ease: 'easeOut' }}
+                            style={{ height: '100%', backgroundColor: 'var(--color-purple)', boxShadow: '0 0 10px rgba(138, 43, 226, 0.4)' }} 
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
 
-                  <div style={{ marginTop: '24px', padding: '16px', border: '1px solid rgba(0,255,135,0.15)', borderRadius: '10px', backgroundColor: 'rgba(0,255,135,0.02)' }}>
-                    <p style={{ margin: 0, fontSize: '12px', color: 'var(--color-green)', lineHeight: 1.5, fontWeight: 500 }}>
-                      💡 <strong>Model explanation:</strong> High confidence rating on ARGENTINA due to extreme travel fatigue factors on France's defensive line (-18% stamina forecast).
-                    </p>
-                  </div>
-                </div>
-
-                {/* Score & xG Tracker Panel */}
-                <div className="glass-panel" style={{ padding: '24px', textAlign: 'center', position: 'relative' }}>
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', alignItems: 'center', marginBottom: '14px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: 'var(--color-pink)' }}>
-                      <Flame size={16} className="pulse-live" />
-                      <span style={{ fontWeight: 800, fontSize: '13px', letterSpacing: '1px' }}>LIVE ({minute}')</span>
-                    </div>
+                  {/* Model Comparison widget */}
+                  <div className="glass-panel" style={{ padding: '24px' }}>
+                    <ModelComparison winProb={winProb} drawProb={drawProb} lossProb={lossProb} />
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center' }}>
-                    <div>
-                      <Shield size={44} color="var(--color-blue)" />
-                      <h4 style={{ margin: '8px 0 4px 0', fontSize: '14px', fontWeight: 800 }}>ARGENTINA</h4>
-                    </div>
-                    <div style={{ fontSize: '38px', fontWeight: 800, letterSpacing: '-1px' }}>2 - 1</div>
-                    <div>
-                      <Shield size={44} color="var(--color-purple)" />
-                      <h4 style={{ margin: '8px 0 4px 0', fontSize: '14px', fontWeight: 800 }}>FRANCE</h4>
-                    </div>
+                  {/* Betting Simulator */}
+                  <div className="glass-panel" style={{ padding: '24px' }}>
+                    <BettingSimulator winProb={winProb} drawProb={drawProb} lossProb={lossProb} />
                   </div>
 
-                  <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'center', gap: '12px' }}>
-                    <div className="glass-panel" style={{ padding: '8px 14px', fontSize: '13px', borderRadius: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Zap size={14} color="var(--color-gold)" /> Expected Goals: <strong style={{ color: 'var(--color-green)' }}>1.65</strong> - <strong>0.98</strong>
-                    </div>
+                  {/* Live ESPN Commentary & Play-by-Play */}
+                  <div className="glass-panel" style={{ padding: '24px' }}>
+                    <LiveCommentary
+                      minute={minute}
+                      plays={matchPlays}
+                      homeCode={selectedMatch.homeTeam.abbreviation}
+                      awayCode={selectedMatch.awayTeam.abbreviation}
+                    />
                   </div>
-                </div>
 
-                {/* Tactical Formations Detail */}
-                <div className="glass-panel" style={{ padding: '24px' }}>
-                  <h3 style={{ margin: '0 0 16px 0', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '18px', fontWeight: 800 }}>
-                    <Users size={20} color="var(--color-blue)" /> AI Formation Detection
-                  </h3>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Argentina Formation</span>
-                      <strong style={{ color: 'var(--color-blue)' }}>4-3-3 Attacking</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '10px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>France Formation</span>
-                      <strong style={{ color: 'var(--color-purple)' }}>4-2-3-1 Fluid</strong>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ color: 'var(--text-secondary)', fontWeight: 500 }}>Pressing Intensity (PPDA)</span>
-                      <strong>8.4 (High Intensity)</strong>
-                    </div>
+                  {/* DeepAssistant GenAI Chatbot */}
+                  <div className="glass-panel" style={{ padding: '24px' }}>
+                    <DeepAssistant matchName={selectedMatch.name} />
                   </div>
-                </div>
 
-                {/* Model Comparison widget */}
-                <div className="glass-panel" style={{ padding: '24px' }}>
-                  <ModelComparison winProb={probabilities.win} drawProb={probabilities.draw} lossProb={probabilities.loss} />
                 </div>
-
-                {/* Betting Simulator */}
-                <div className="glass-panel" style={{ padding: '24px' }}>
-                  <BettingSimulator winProb={probabilities.win} drawProb={probabilities.draw} lossProb={probabilities.loss} />
-                </div>
-
-                {/* Live Commentary log */}
-                <div className="glass-panel" style={{ padding: '24px' }}>
-                  <LiveCommentary minute={minute} />
-                </div>
-
-                {/* DeepAssistant GenAI Chatbot */}
-                <div className="glass-panel" style={{ padding: '24px' }}>
-                  <DeepAssistant />
-                </div>
-
               </div>
             </motion.div>
           ) : (

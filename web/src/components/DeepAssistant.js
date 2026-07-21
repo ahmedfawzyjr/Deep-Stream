@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 
-export default function DeepAssistant() {
+export default function DeepAssistant({ matchName = 'Argentina vs France' }) {
   const [messages, setMessages] = useState([
-    { role: 'assistant', text: '👋 Hello! I am DeepAssistant AI. Ask me about match tactics, 3D stadium telemetry, or ONNX model predictions!' }
+    { role: 'assistant', text: `👋 Hello! I am DeepAssistant AI. Ask me about match tactics for ${matchName}, 3D stadium telemetry, or ONNX model predictions!` }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -20,7 +20,7 @@ export default function DeepAssistant() {
       const res = await fetch('http://localhost:5001/api/v1/chatbot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: userMsg.text }),
+        body: JSON.stringify({ prompt: userMsg.text, match_name: matchName }),
       });
       const data = await res.json();
       setMessages((prev) => [...prev, { role: 'assistant', text: data.response || 'Insight generated.' }]);
@@ -30,7 +30,7 @@ export default function DeepAssistant() {
         ...prev,
         {
           role: 'assistant',
-          text: `[DeepAssistant AI Sim]: Analyzed query '${userMsg.text}'. Tactical pressing index is at 87% with high offensive overload.`
+          text: `[DeepAssistant AI Sim for ${matchName}]: Analyzed query '${userMsg.text}'. Tactical pressing index is at 87% with high offensive overload in the final third.`
         }
       ]);
     } finally {

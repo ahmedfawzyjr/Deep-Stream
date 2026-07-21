@@ -17,6 +17,9 @@ interface MatchAnalyticsBarProps {
   awayTeam?: string;
   homeFlag?: string;
   awayFlag?: string;
+  homeLogo?: string;
+  awayLogo?: string;
+  venueName?: string;
 }
 
 export default function MatchAnalyticsBar({
@@ -32,6 +35,9 @@ export default function MatchAnalyticsBar({
   awayTeam = 'SPAIN',
   homeFlag = '\u{1F1E6}\u{1F1F7}',
   awayFlag = '\u{1F1EA}\u{1F1F8}',
+  homeLogo,
+  awayLogo,
+  venueName,
 }: MatchAnalyticsBarProps) {
   const [goalFlash, setGoalFlash] = useState(false);
   const [prevScore, setPrevScore] = useState({ home: scoreHome, away: scoreAway });
@@ -65,10 +71,14 @@ export default function MatchAnalyticsBar({
       </AnimatePresence>
 
       {/* Left: Home team */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-        <span style={{ fontSize: '18px' }}>{homeFlag}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+        {homeLogo ? (
+          <img src={homeLogo} alt={homeTeam} style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+        ) : (
+          <span style={{ fontSize: '20px' }}>{homeFlag}</span>
+        )}
         <div>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {homeTeam}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--color-blue)', fontWeight: 800 }}>
@@ -84,6 +94,7 @@ export default function MatchAnalyticsBar({
           <span style={{ fontSize: '12px', color: 'var(--color-pink)', fontWeight: 800, letterSpacing: '1px' }}>
             LIVE {minute}'
           </span>
+          {venueName && <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>• {venueName}</span>}
         </div>
         <motion.div
           className="match-score-display"
@@ -91,25 +102,29 @@ export default function MatchAnalyticsBar({
           transition={{ duration: 0.6 }}
           style={{ color: goalFlash ? 'var(--color-gold)' : 'var(--text-primary)', transition: 'color 0.3s' }}
         >
-          {scoreHome} \u2013 {scoreAway}
+          {scoreHome} – {scoreAway}
         </motion.div>
         <div className="match-xg-badge">
           <Zap size={11} color="var(--color-gold)" />
-          xG {xgHome.toFixed(2)} \u2014 {xgAway.toFixed(2)}
+          xG {xgHome.toFixed(2)} — {xgAway.toFixed(2)}
         </div>
       </div>
 
       {/* Right: Away team */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end', minWidth: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'flex-end', minWidth: 0 }}>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-primary)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             {awayTeam}
           </div>
           <div style={{ fontSize: '11px', color: 'var(--color-purple)', fontWeight: 800 }}>
             {(lossProb * 100).toFixed(0)}% win
           </div>
         </div>
-        <span style={{ fontSize: '18px' }}>{awayFlag}</span>
+        {awayLogo ? (
+          <img src={awayLogo} alt={awayTeam} style={{ width: '28px', height: '28px', objectFit: 'contain' }} />
+        ) : (
+          <span style={{ fontSize: '20px' }}>{awayFlag}</span>
+        )}
       </div>
 
       {/* Win probability bar */}

@@ -4,38 +4,67 @@ import React, { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MessageSquare, Flame, Shield, ArrowRightLeft, Info } from 'lucide-react';
 
+import { ESPNPlay } from '../services/espnApi';
+
 interface CommentaryItem {
   min: number;
   type: 'info' | 'goal' | 'threat' | 'substitution';
   text: string;
-  team?: 'ARG' | 'FRA';
+  team?: string;
 }
 
-const COMMENTARY_DATA: CommentaryItem[] = [
-  { min: 3, type: 'info', text: 'Match starts under dry conditions at MetLife Stadium. Argentina kicking off from left to right.' },
-  { min: 9, type: 'threat', team: 'ARG', text: 'Messi releases Di Maria on the left wing. T. Hernandez blocks the low cross.' },
-  { min: 14, type: 'goal', team: 'ARG', text: 'GOAL! Lionel Messi converts the penalty with a cool strike into the bottom-left corner! (1-0)' },
-  { min: 22, type: 'info', text: 'France starting to assert possession in midfield. Rabiot dictating the tempo.' },
-  { min: 32, type: 'substitution', team: 'FRA', text: 'Tactical adjustment: Rabiot receives a yellow card, forcing Deschamps to pull back Tchouameni.' },
-  { min: 41, type: 'goal', team: 'ARG', text: 'GOAL! Ángel Di María finishes a lightning-fast counter-attack assisted by Mac Allister! (2-0)' },
+const DEFAULT_COMMENTARY: CommentaryItem[] = [
+  { min: 3, type: 'info', text: 'Match starts under dry conditions. Kicking off from left to right.' },
+  { min: 9, type: 'threat', text: 'Low cross into the penalty box, defensive line parries away.' },
+  { min: 14, type: 'goal', text: 'GOAL! Cool strike into the bottom corner after high pressing turnover! (1-0)' },
+  { min: 22, type: 'info', text: 'Possession battle in midfield dictating match tempo.' },
+  { min: 32, type: 'substitution', text: 'Tactical adjustment: Yellow card issued for late challenge.' },
+  { min: 41, type: 'goal', text: 'GOAL! Lightning-fast counter-attack finishes in the top right corner! (2-0)' },
   { min: 45, type: 'info', text: 'First half extra time: +3 minutes added by the referee.' },
-  { min: 53, type: 'threat', team: 'FRA', text: 'Mbappe bursts past Molina. Shoots from tight angle, Martinez parries it away.' },
-  { min: 64, type: 'substitution', team: 'ARG', text: 'Substitution: Tagliafico is replaced by Acuna to reinforce the left flank.' },
-  { min: 72, type: 'threat', team: 'FRA', text: 'Griezmann corner kick met by Giroud, header bounces off the crossbar!' },
-  { min: 78, type: 'goal', team: 'FRA', text: 'GOAL! Kylian Mbappé drills the penalty kick past Martinez! France is back in the game! (2-1)' },
-  { min: 81, type: 'goal', team: 'FRA', text: 'GOAL! Unbelievable volley from Kylian Mbappé after a quick exchange with Thuram! (2-2)' },
-  { min: 87, type: 'threat', team: 'ARG', text: 'Messi shoots from 25 yards! Maignan tip-saves it over the bar!' }
+  { min: 53, type: 'threat', text: 'Striker bursts past defense from tight angle, goalkeeper parries away!' },
+  { min: 64, type: 'substitution', text: 'Substitution: Flank defender replaced to reinforce defensive shape.' },
+  { min: 72, type: 'threat', text: 'Corner kick header bounces off the crossbar!' },
+  { min: 78, type: 'goal', text: 'GOAL! Drilled penalty kick into the side netting! (2-1)' },
+  { min: 81, type: 'goal', text: 'GOAL! Unbelievable volley after a quick wall-pass exchange! (2-2)' },
+  { min: 87, type: 'threat', text: 'Long-range shot from 25 yards! Goalkeeper tips over the bar!' }
 ];
 
 interface LiveCommentaryProps {
   minute: number;
+  plays?: ESPNPlay[];
+  homeCode?: string;
+  awayCode?: string;
 }
 
-export default function LiveCommentary({ minute }: LiveCommentaryProps) {
+export default function LiveCommentary({ minute, plays, homeCode = 'HOME', awayCode = 'AWAY' }: LiveCommentaryProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
+  // Map ESPN plays to commentary items if present
+  let items: CommentaryItem[] = [];
+  if (plays && plays.length > 0) {
+    items = plays.map(p => {
+      const minNum = parseInt(p.clock.replace("'", '')) || minute;
+      const isGoal = p.scoreValue && p.scoreValue > 0 || p.text.toLowerCase().includes('goal');
+      const isSub = p.text.toLowerCase().includes('substitution') || p.text.toLowerCase().includes('replaces');
+      const isCard = p.text.toLowerCase().includes('yellow card') || p.text.toLowerCase().includes('red card');
+      
+      let type: 'info' | 'goal' | 'threat' | 'substitution' = 'info';
+      if (isGoal) type = 'goal';
+      else if (isSub || isCard) type = 'substitution';
+      else if (p.text.toLowerCase().includes('shot') || p.text.toLowerCase().includes('miss')) type = 'threat';
+
+      return {
+        min: minNum,
+        type,
+        text: p.text
+      };
+    });
+  } else {
+    items = DEFAULT_COMMENTARY;
+  }
+
   // Filter commentary that happened up to current minute
-  const visibleCommentary = COMMENTARY_DATA.filter(item => item.min <= minute)
+  const visibleCommentary = items.filter(item => item.min <= minute)
     .sort((a, b) => b.min - a.min); // Newest first
 
   useEffect(() => {
