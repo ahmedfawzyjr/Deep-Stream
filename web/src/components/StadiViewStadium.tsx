@@ -365,12 +365,40 @@ export default function StadiViewStadium({
       const hairMats = ['#171310','#2b1c10','#4a3520','#0d0d0d'].map(c => new THREE.MeshLambertMaterial({ color: c }));
       const bootMat = new THREE.MeshLambertMaterial({ color: 0x101014 });
       const kits = [
-        { shirt: new THREE.MeshLambertMaterial({ color: 0x9fd8ff, emissive: new THREE.Color(0x9fd8ff), emissiveIntensity: 0.12 }), shorts: new THREE.MeshLambertMaterial({ color: 0xf2f4f8 }), gk: new THREE.MeshLambertMaterial({ color: 0x2fbf71 }) },
-        { shirt: new THREE.MeshLambertMaterial({ color: 0xd92626, emissive: new THREE.Color(0xd92626), emissiveIntensity: 0.12 }), shorts: new THREE.MeshLambertMaterial({ color: 0x232360 }), gk: new THREE.MeshLambertMaterial({ color: 0xe8c53a }) },
-        { shirt: new THREE.MeshLambertMaterial({ color: 0xf2e341, emissive: new THREE.Color(0xf2e341), emissiveIntensity: 0.1 }), shorts: new THREE.MeshLambertMaterial({ color: 0x141414 }) },
+        { shirt: new THREE.MeshLambertMaterial({ color: 0x00e5ff, emissive: new THREE.Color(0x00e5ff), emissiveIntensity: 0.15 }), shorts: new THREE.MeshLambertMaterial({ color: 0xffffff }), gk: new THREE.MeshLambertMaterial({ color: 0x2fbf71 }) },
+        { shirt: new THREE.MeshLambertMaterial({ color: 0x0e2b84, emissive: new THREE.Color(0x0e2b84), emissiveIntensity: 0.15 }), shorts: new THREE.MeshLambertMaterial({ color: 0xffffff }), gk: new THREE.MeshLambertMaterial({ color: 0xe8c53a }) },
+        { shirt: new THREE.MeshLambertMaterial({ color: 0xeab308, emissive: new THREE.Color(0xeab308), emissiveIntensity: 0.2 }), shorts: new THREE.MeshLambertMaterial({ color: 0x000000 }) },
       ];
 
-      const mkPlayer = (kit: any, gk: boolean) => {
+      const HOME_ROSTER = [
+        { name: 'E. Martínez', number: 23, gk: true },
+        { name: 'N. Molina', number: 26 },
+        { name: 'C. Romero', number: 13 },
+        { name: 'N. Otamendi', number: 19 },
+        { name: 'N. Tagliafico', number: 3 },
+        { name: 'R. De Paul', number: 7 },
+        { name: 'Enzo F.', number: 24 },
+        { name: 'A. Mac Allister', number: 20 },
+        { name: 'L. Messi', number: 10 },
+        { name: 'J. Álvarez', number: 9 },
+        { name: 'Á. Di María', number: 11 }
+      ];
+
+      const AWAY_ROSTER = [
+        { name: 'M. Maignan', number: 16, gk: true },
+        { name: 'J. Koundé', number: 5 },
+        { name: 'D. Upamecano', number: 4 },
+        { name: 'I. Konaté', number: 24 },
+        { name: 'T. Hernandez', number: 22 },
+        { name: 'A. Tchouaméni', number: 8 },
+        { name: 'A. Rabiot', number: 14 },
+        { name: 'O. Dembélé', number: 11 },
+        { name: 'A. Griezmann', number: 7 },
+        { name: 'K. Mbappé', number: 10 },
+        { name: 'O. Giroud', number: 9 }
+      ];
+
+      const mkPlayer = (kit: any, gk: boolean, name: string, num: number, teamId: number) => {
         const g = new THREE.Group();
         const skin = skinMats[(rng() * skinMats.length) | 0];
         const shirtM = gk && kit.gk ? kit.gk : kit.shirt;
@@ -390,30 +418,61 @@ export default function StadiViewStadium({
         armL.add(new THREE.Mesh(armGeo, shirtM)); armR.add(new THREE.Mesh(armGeo, shirtM));
         const head = new THREE.Mesh(new THREE.SphereGeometry(0.14,8,6), skin); head.position.y = 1.85;
         const hair = new THREE.Mesh(new THREE.SphereGeometry(0.146,8,4,0,TAU,0,Math.PI/2.1), hairMats[(rng()*hairMats.length)|0]); hair.position.y = 1.87;
-        g.add(legL, legR, shorts, torso, armL, armR, head, hair);
+
+        // Ground Threat Ring
+        const ringColor = teamId === 0 ? '#00e5ff' : (teamId === 1 ? '#a855f7' : '#eab308');
+        const ringMat = new THREE.MeshBasicMaterial({ color: ringColor, side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
+        const ring = new THREE.Mesh(new THREE.RingGeometry(0.55, 0.72, 24), ringMat);
+        ring.name = 'threat-ring';
+        ring.rotation.x = -Math.PI / 2; ring.position.y = 0.04;
+
+        // Floating 3D Player Name & Jersey Badge
+        const badgeTex = canvasTexture(256, 64, (x, w, h) => {
+          x.fillStyle = 'rgba(15, 23, 42, 0.88)';
+          x.beginPath();
+          x.roundRect(4, 4, w - 8, h - 8, 10);
+          x.fill();
+          x.strokeStyle = ringColor;
+          x.lineWidth = 4;
+          x.stroke();
+          x.font = '700 24px Outfit, system-ui';
+          x.fillStyle = '#ffffff';
+          x.textAlign = 'center';
+          x.textBaseline = 'middle';
+          x.fillText(`${num} ${name}`, w / 2, h / 2 + 1);
+        });
+        const badgeMat = new THREE.SpriteMaterial({ map: badgeTex, transparent: true });
+        const badge = new THREE.Sprite(badgeMat);
+        badge.name = 'name-badge';
+        badge.scale.set(4.8, 1.2, 1);
+        badge.position.y = 2.45;
+
+        g.add(legL, legR, shorts, torso, armL, armR, head, hair, ring, badge);
         g.traverse(o => { if ((o as any).isMesh) (o as THREE.Mesh).castShadow = true; });
         scene.add(g);
-        return { g, legL, legR, armL, armR };
-      }
+        return { g, legL, legR, armL, armR, ring, badge, name, number: num };
+      };
 
       for (let team = 0; team < 2; team++) {
+        const roster = team === 0 ? HOME_ROSTER : AWAY_ROSTER;
         for (let i = 0; i < 11; i++) {
-          const gk = i === 0;
+          const pData = roster[i] || { name: `Player ${i+1}`, number: i+1, gk: i===0 };
+          const gk = pData.gk || i === 0;
           const col = gk ? 0 : 1+Math.floor((i-1)/3.4), rowIn = gk ? 1.5 : (i-1)%4;
           const side = team ? 1 : -1;
           const hx = gk ? side*49.5 : side*(8+col*11);
           const hz = THREE.MathUtils.clamp((rowIn-1.5)*14,-30,30);
-          const p = mkPlayer(kits[team], gk);
+          const p = mkPlayer(kits[team], gk, pData.name, pData.number, team);
           players.push(Object.assign(p, { home: new THREE.Vector3(hx,0,hz), team, gk, ph:rng()*TAU, sp:0.85+rng()*0.35, amp:0 }));
           p.g.position.set(hx, 0, hz);
         }
       }
-      const rf = mkPlayer(kits[2], false);
+      const rf = mkPlayer(kits[2], false, 'REFEREE', 0, 2);
       players.push(Object.assign(rf, { home: new THREE.Vector3(0,0,10), team:2, gk:false, ph:rng()*TAU, sp:1, amp:0 }));
       rf.g.position.set(0, 0, 10);
 
-      ball = new THREE.Mesh(new THREE.SphereGeometry(0.16,10,8), new THREE.MeshStandardMaterial({ color:0xf5f8ff, roughness:0.4, emissive:new THREE.Color(0xdfe6ff), emissiveIntensity:0.14 }));
-      ball.castShadow = true; ball.position.set(0,0.16,0); scene.add(ball);
+      ball = new THREE.Mesh(new THREE.SphereGeometry(0.24, 16, 14), new THREE.MeshStandardMaterial({ color: 0x00ff87, emissive: new THREE.Color(0x00ff87), emissiveIntensity: 0.6, roughness: 0.1 }));
+      ball.castShadow = true; ball.position.set(0,0.22,0); scene.add(ball);
     }
 
     // ── Match State Machine ────────────────────────────────────────
@@ -1161,6 +1220,15 @@ export default function StadiViewStadium({
         p.legL.rotation.x=sw; p.legR.rotation.x=-sw;
         if (match.celebrate>0&&p.team===match.scoredBy) { p.armL.rotation.x=-2.7+Math.sin(t*9+p.ph)*0.2; p.armR.rotation.x=-2.7+Math.cos(t*9+p.ph)*0.2; p.g.position.y=Math.abs(Math.sin(t*7+p.ph))*0.16; }
         else { p.armL.rotation.x=-sw*0.8; p.armR.rotation.x=sw*0.8; p.g.position.y=Math.abs(Math.sin(t*10.5*p.sp+p.ph))*0.045*p.amp; }
+
+        if (p.ring) {
+          const isHolder = i === match.holder;
+          const targetScale = isHolder ? 1.45 + Math.sin(t * 6) * 0.15 : 1.0;
+          p.ring.scale.set(targetScale, targetScale, 1);
+          if (p.ring.material) {
+            (p.ring.material as THREE.MeshBasicMaterial).color.set(isHolder ? '#eab308' : (p.team === 0 ? '#00e5ff' : (p.team === 1 ? '#a855f7' : '#eab308')));
+          }
+        }
       }
     }
 
