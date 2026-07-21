@@ -27,6 +27,7 @@ __pycache__/
 # Databases / Storage files
 /data/
 *.db
+*.sqlite3
 *.onnx
 models/
 !models/README.md

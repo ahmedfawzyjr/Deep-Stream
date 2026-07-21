@@ -34,6 +34,7 @@ import ShapRadar from '../components/ShapRadar';
 import StadiViewStadium from '../components/StadiViewStadium';
 import SeatPickerPanel, { type SeatInfo } from '../components/SeatPickerPanel';
 import MatchAnalyticsBar from '../components/MatchAnalyticsBar';
+import DeepAssistant from '../components/DeepAssistant';
 
 import {
   playWhistleSound,
@@ -181,7 +182,7 @@ export default function Home() {
       </div>
 
       {/* Premium Glassmorphic Header */}
-      <header className="glass-panel" style={{ margin: '20px 28px', padding: '16px 28px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header className="glass-panel main-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <motion.img 
             src="/logo.png" 
@@ -197,7 +198,7 @@ export default function Home() {
           </div>
         </div>
         
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+        <div className="header-actions">
           <button 
             onClick={toggleSound}
             className="nav-tab"
@@ -252,7 +253,7 @@ export default function Home() {
               />
 
               {/* Stadium 3D + Seat Panel */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '20px', alignItems: 'start' }}>
+              <div className="stadium-view-grid">
                 {/* 3D Stadium Canvas */}
                 <StadiViewStadium
                   minute={minute}
@@ -497,6 +498,11 @@ export default function Home() {
                 {/* Live Commentary log */}
                 <div className="glass-panel" style={{ padding: '24px' }}>
                   <LiveCommentary minute={minute} />
+                </div>
+
+                {/* DeepAssistant GenAI Chatbot */}
+                <div className="glass-panel" style={{ padding: '24px' }}>
+                  <DeepAssistant />
                 </div>
 
               </div>

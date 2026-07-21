@@ -1,0 +1,47 @@
+apiVersion: apps.openshift.io/v1
+kind: DeploymentConfig
+metadata:
+  name: deepstream-api
+  namespace: deepstream-prod
+  labels:
+    app: deepstream-api
+    app.kubernetes.io/part-of: deepstream-platform
+spec:
+  replicas: 3
+  selector:
+    app: deepstream-api
+  template:
+    metadata:
+      labels:
+        app: deepstream-api
+    spec:
+      containers:
+        - name: deepstream-api
+          image: image-registry.openshift-image-registry.svc:5000/deepstream-prod/deepstream-api:latest
+          ports:
+            - containerPort: 8080
+              protocol: TCP
+          env:
+            - name: PORT
+              value: "8080"
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+---
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: deepstream-api-route
+  namespace: deepstream-prod
+spec:
+  to:
+    kind: Service
+    name: deepstream-api
+  port:
+    targetPort: 8080
+  tls:
+    termination: edge

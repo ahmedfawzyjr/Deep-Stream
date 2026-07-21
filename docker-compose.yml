@@ -93,6 +93,39 @@ services:
     depends_on:
       - prometheus
 
+  # Flask GenAI & Tactical Analysis Service
+  api_flask:
+    build:
+      context: ./api_flask
+      dockerfile: Dockerfile
+    container_name: deepstream-api-flask
+    ports:
+      - "5001:5001"
+    environment:
+      - PORT=5001
+
+  # Express.js Telemetry Gateway Proxy
+  api_node:
+    build:
+      context: ./api_node
+      dockerfile: Dockerfile
+    container_name: deepstream-api-node
+    ports:
+      - "4000:4000"
+
+  # Django Squad & Tactical Admin Portal
+  admin_django:
+    build:
+      context: ./admin_django
+      dockerfile: Dockerfile
+    container_name: deepstream-admin-django
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=True
+    depends_on:
+      - postgres
+
 volumes:
   postgres_data:
   prometheus_data:
