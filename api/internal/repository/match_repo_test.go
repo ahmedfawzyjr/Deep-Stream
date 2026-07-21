@@ -36,7 +36,7 @@ func TestMatchRepository_Integration(t *testing.T) {
 			postgres.WithDatabase(dbName),
 			postgres.WithUsername(dbUser),
 			postgres.WithPassword(dbPassword),
-			testcontainers.WithWaitSpec(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(60*time.Second)),
+			testcontainers.WithWaitStrategy(wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(60*time.Second)),
 		)
 		if err != nil {
 			t.Skipf("skipping test: failed to start postgres container: %v", err)

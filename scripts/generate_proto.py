@@ -18,23 +18,32 @@ def main():
     protoc_path = os.path.abspath("tmp_protoc/bin/protoc.exe")
     
     print("Installing go plugins...")
-    # Run go install
     env = os.environ.copy()
-    # Find go in typical user path or let shell resolve if available
-    # Since go is not in PATH, let's check if we can run it, or if we need to skip go generation
-    try:
-        subprocess.run(["go", "version"], check=True)
-        go_available = True
-    except Exception:
+    go_bin_path = r"C:\Program Files\Go\bin"
+    if os.path.exists(go_bin_path):
+        env["PATH"] = go_bin_path + os.pathsep + env.get("PATH", "")
+
+    go_cmd = shutil.which("go", path=env.get("PATH"))
+    if not go_cmd and os.path.exists(r"C:\Program Files\Go\bin\go.exe"):
+        go_cmd = r"C:\Program Files\Go\bin\go.exe"
+
+    if go_cmd:
+        try:
+            subprocess.run([go_cmd, "version"], env=env, check=True)
+            go_available = True
+        except Exception as e:
+            print(f"Error checking go version: {e}")
+            go_available = False
+    else:
         go_available = False
         print("Go is not available on host. Skipping Go proto generation on host.")
         
-    if go_available:
-        subprocess.run(["go", "install", "google.golang.org/protobuf/cmd/protoc-gen-go@v1.33.0"], check=True)
-        subprocess.run(["go", "install", "google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0"], check=True)
+    if go_available and go_cmd:
+        subprocess.run([go_cmd, "install", "google.golang.org/protobuf/cmd/protoc-gen-go@v1.33.0"], env=env, check=True)
+        subprocess.run([go_cmd, "install", "google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0"], env=env, check=True)
         
         # Add GOBIN to path
-        go_path = subprocess.check_output(["go", "env", "GOPATH"]).decode().strip()
+        go_path = subprocess.check_output([go_cmd, "env", "GOPATH"], env=env).decode().strip()
         gobin = os.path.join(go_path, "bin")
         env["PATH"] = gobin + os.pathsep + env.get("PATH", "")
         

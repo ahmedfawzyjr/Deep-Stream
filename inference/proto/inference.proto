@@ -1,6 +1,8 @@
 syntax = "proto3";
 package inference;
 
+option go_package = "github.com/ahmedfawzyjr/deep-stream/api/internal/pb";
+
 service InferenceService {
   rpc Predict(PredictRequest) returns (PredictResponse);
   rpc Health(HealthRequest) returns (HealthResponse);
