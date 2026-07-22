@@ -29,7 +29,9 @@ import { PlayerStockMarket } from './components/PlayerStockMarket';
 import { SpatialVisionProView } from './components/SpatialVisionProView';
 import { KalmanVoronoiControlMap } from './components/KalmanVoronoiControlMap';
 import { GRPCTelemetryStreamer } from './components/gRPCTelemetryStreamer';
+import { ComplexMatchGameplay } from './components/ComplexMatchGameplay';
 import PassingNetwork from './components/PassingNetwork';
+
 
 import AudioVoiceControl from './components/AudioVoiceControl';
 
@@ -324,6 +326,15 @@ export default function App() {
             📡 gRPC Inspector
           </button>
           <button 
+            onClick={() => setActiveTab("epl")}
+            style={{ 
+              background: activeTab === "epl" ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
+              color: activeTab === "epl" ? '#ef4444' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            🏴󠁧󠁢󠁥󠁮󠁧󠁿 EPL Gameplay
+          </button>
+          <button 
             onClick={() => setActiveTab("bracket")}
             style={{ 
               background: activeTab === "bracket" ? 'rgba(255,255,255,0.08)' : 'transparent',
@@ -334,6 +345,7 @@ export default function App() {
           </button>
         </div>
       </header>
+
 
 
 
@@ -596,7 +608,12 @@ export default function App() {
           <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <GRPCTelemetryStreamer />
           </div>
+        ) : activeTab === "epl" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <ComplexMatchGameplay />
+          </div>
         ) : (
+
 
 
 
