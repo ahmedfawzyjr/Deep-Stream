@@ -12,7 +12,7 @@ import {
 } from '../utils/audio';
 
 // Define Camera Presets
-type CameraPreset = 'tactical' | 'broadcast' | 'goalline' | 'var-booth' | 'orbit';
+type CameraPreset = 'tactical' | 'broadcast' | 'goalline' | 'var-booth' | 'orbit' | 'fpv-player';
 
 interface CameraTarget {
   pos: [number, number, number];
@@ -24,8 +24,10 @@ const PRESETS: Record<CameraPreset, CameraTarget> = {
   broadcast: { pos: [0, 11, 15], look: [0, 0, 0] },
   goalline: { pos: [-14, 3, 0], look: [0, 1, 0] },
   'var-booth': { pos: [0, 4, 11.5], look: [0, 0.8, 9] },
-  orbit: { pos: [10, 8, 10], look: [0, 0, 0] }
+  orbit: { pos: [10, 8, 10], look: [0, 0, 0] },
+  'fpv-player': { pos: [0, 1.6, 2], look: [12, 1, 0] }
 };
+
 
 interface PlayerData {
   id: string;
@@ -748,7 +750,7 @@ export default function Stadium3D() {
 
         {/* View Controllers */}
         <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 10, display: 'flex', gap: '6px' }}>
-          {(['broadcast', 'tactical', 'goalline', 'var-booth', 'orbit'] as CameraPreset[]).map((preset) => (
+          {(['broadcast', 'tactical', 'goalline', 'var-booth', 'orbit', 'fpv-player'] as CameraPreset[]).map((preset) => (
             <button
               key={preset}
               onClick={() => handleCameraChange(preset)}
@@ -766,10 +768,11 @@ export default function Stadium3D() {
                 transition: 'all 0.2s ease'
               }}
             >
-              {preset === 'goalline' ? 'Goal Line' : (preset === 'var-booth' ? 'VAR Monitor' : preset)}
+              {preset === 'goalline' ? 'Goal Line' : (preset === 'var-booth' ? 'VAR Monitor' : (preset === 'fpv-player' ? '🎥 FPV Cam' : preset))}
             </button>
           ))}
         </div>
+
 
         <Canvas shadows camera={{ position: PRESETS.broadcast.pos, fov: 45 }}>
           <ambientLight intensity={0.5} />

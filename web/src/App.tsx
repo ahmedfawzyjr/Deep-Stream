@@ -9,8 +9,31 @@ import {
   Activity, 
   RefreshCw, 
   Shield, 
-  Users 
+  Users,
+  Search
 } from 'lucide-react';
+import { TacticalScenarioSimulator } from './components/TacticalScenarioSimulator';
+import { PlayerSimilarityScout } from './components/PlayerSimilarityScout';
+import { PredictiveFantasyCard } from './components/PredictiveFantasyCard';
+import { StadiumARView } from './components/StadiumARView';
+import { FatigueInjuryPredictor } from './components/FatigueInjuryPredictor';
+import { TacticalBoard3D } from './components/TacticalBoard3D';
+import { OpponentScoutingReport } from './components/OpponentScoutingReport';
+import { ServicesHealthPulse } from './components/ServicesHealthPulse';
+import { RefereeConsistencyScorecard } from './components/RefereeConsistencyScorecard';
+import { YouthAcademyTracker } from './components/YouthAcademyTracker';
+import { StadiumDigitalTwin } from './components/StadiumDigitalTwin';
+import { BiomechanicalStressViewer } from './components/BiomechanicalStressViewer';
+import { AlphaZeroPassRecommender } from './components/AlphaZeroPassRecommender';
+import { PlayerStockMarket } from './components/PlayerStockMarket';
+import { SpatialVisionProView } from './components/SpatialVisionProView';
+import PassingNetwork from './components/PassingNetwork';
+import AudioVoiceControl from './components/AudioVoiceControl';
+
+
+
+
+
 
 interface MatchState {
   match_id: string;
@@ -38,6 +61,7 @@ export default function App() {
     xg: { team_a: 1.45, team_b: 0.92 },
     momentum: 45
   });
+
 
   // Dual-mode WebSocket with simulation fallback
   useEffect(() => {
@@ -161,6 +185,123 @@ export default function App() {
             Live Match Center
           </button>
           <button 
+            onClick={() => setActiveTab("simulator")}
+            style={{ 
+              background: activeTab === "simulator" ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+              color: activeTab === "simulator" ? '#60a5fa' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            ⚡ Tactical Simulator
+          </button>
+          <button 
+            onClick={() => setActiveTab("scout")}
+            style={{ 
+              background: activeTab === "scout" ? 'rgba(168, 85, 247, 0.2)' : 'transparent',
+              color: activeTab === "scout" ? '#c084fc' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            🔍 AI Scout Engine
+          </button>
+          <button 
+            onClick={() => setActiveTab("fantasy")}
+            style={{ 
+              background: activeTab === "fantasy" ? 'rgba(234, 179, 8, 0.2)' : 'transparent',
+              color: activeTab === "fantasy" ? '#facc15' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            🏆 Live Fantasy
+          </button>
+          <button 
+            onClick={() => setActiveTab("ar")}
+            style={{ 
+              background: activeTab === "ar" ? 'rgba(14, 165, 233, 0.2)' : 'transparent',
+              color: activeTab === "ar" ? '#38bdf8' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            🥽 WebAR View
+          </button>
+          <button 
+            onClick={() => setActiveTab("fatigue")}
+            style={{ 
+              background: activeTab === "fatigue" ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
+              color: activeTab === "fatigue" ? '#f87171' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            🛡️ Fatigue & Risk
+          </button>
+          <button 
+            onClick={() => setActiveTab("board3d")}
+            style={{ 
+              background: activeTab === "board3d" ? 'rgba(34, 197, 94, 0.2)' : 'transparent',
+              color: activeTab === "board3d" ? '#4ade80' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            ✏️ 3D Board
+          </button>
+          <button 
+            onClick={() => setActiveTab("referee")}
+            style={{ 
+              background: activeTab === "referee" ? 'rgba(234, 179, 8, 0.2)' : 'transparent',
+              color: activeTab === "referee" ? '#facc15' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            ⚖️ AI Referee
+          </button>
+          <button 
+            onClick={() => setActiveTab("academy")}
+            style={{ 
+              background: activeTab === "academy" ? 'rgba(168, 85, 247, 0.2)' : 'transparent',
+              color: activeTab === "academy" ? '#c084fc' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            🎓 Youth Academy
+          </button>
+          <button 
+            onClick={() => setActiveTab("twin")}
+            style={{ 
+              background: activeTab === "twin" ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
+              color: activeTab === "twin" ? '#38bdf8' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            🏟️ Digital Twin
+          </button>
+          <button 
+            onClick={() => setActiveTab("biomechanics")}
+            style={{ 
+              background: activeTab === "biomechanics" ? 'rgba(239, 68, 68, 0.2)' : 'transparent',
+              color: activeTab === "biomechanics" ? '#ef4444' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            🧠 Biomechanics
+          </button>
+          <button 
+            onClick={() => setActiveTab("alphazero")}
+            style={{ 
+              background: activeTab === "alphazero" ? 'rgba(34, 197, 94, 0.2)' : 'transparent',
+              color: activeTab === "alphazero" ? '#4ade80' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            🎯 AlphaZero Pass
+          </button>
+          <button 
+            onClick={() => setActiveTab("stocks")}
+            style={{ 
+              background: activeTab === "stocks" ? 'rgba(234, 179, 8, 0.2)' : 'transparent',
+              color: activeTab === "stocks" ? '#facc15' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            💰 Player Stocks
+          </button>
+          <button 
+            onClick={() => setActiveTab("visionpro")}
+            style={{ 
+              background: activeTab === "visionpro" ? 'rgba(192, 132, 252, 0.2)' : 'transparent',
+              color: activeTab === "visionpro" ? '#c084fc' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            🕶️ Vision Pro Spatial
+          </button>
+          <button 
             onClick={() => setActiveTab("bracket")}
             style={{ 
               background: activeTab === "bracket" ? 'rgba(255,255,255,0.08)' : 'transparent',
@@ -171,6 +312,11 @@ export default function App() {
           </button>
         </div>
       </header>
+
+
+
+
+
 
 
       {/* Main Content Area */}
@@ -353,7 +499,77 @@ export default function App() {
 
             </div>
           </>
+        ) : activeTab === "simulator" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <TacticalScenarioSimulator
+              currentWinProb={matchState.win_probability}
+              onApplyScenario={(newProb) => {
+                setMatchState(prev => ({
+                  ...prev,
+                  win_probability: Number(newProb.toFixed(3)),
+                  draw_probability: Number(((1 - newProb) * 0.55).toFixed(3)),
+                  loss_probability: Number(((1 - newProb) * 0.45).toFixed(3))
+                }));
+              }}
+            />
+            <PassingNetwork />
+          </div>
+        ) : activeTab === "scout" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <PlayerSimilarityScout />
+            <OpponentScoutingReport />
+            <ServicesHealthPulse />
+          </div>
+
+        ) : activeTab === "fantasy" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <PredictiveFantasyCard />
+          </div>
+        ) : activeTab === "ar" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <StadiumARView />
+          </div>
+        ) : activeTab === "fatigue" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <FatigueInjuryPredictor currentMinute={matchState.minute} />
+          </div>
+        ) : activeTab === "board3d" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <TacticalBoard3D />
+          </div>
+        ) : activeTab === "referee" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <RefereeConsistencyScorecard />
+          </div>
+        ) : activeTab === "academy" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <YouthAcademyTracker />
+          </div>
+        ) : activeTab === "twin" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <StadiumDigitalTwin />
+          </div>
+        ) : activeTab === "biomechanics" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <BiomechanicalStressViewer />
+          </div>
+        ) : activeTab === "alphazero" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <AlphaZeroPassRecommender />
+          </div>
+        ) : activeTab === "stocks" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <PlayerStockMarket />
+          </div>
+        ) : activeTab === "visionpro" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <SpatialVisionProView />
+          </div>
         ) : (
+
+
+
+
           /* Bracket Tab */
           <div style={{ gridColumn: '1 / -1' }}>
             <div className="glass-panel" style={{ padding: '32px' }}>
@@ -397,6 +613,7 @@ export default function App() {
             </div>
           </div>
         )}
+
 
       </main>
     </div>

@@ -71,6 +71,7 @@ const PASS_LINKS: PassLink[] = [
 export default function PassingNetwork() {
   const [hoveredPlayer, setHoveredPlayer] = useState<PlayerNode | null>(null);
   const [showValues, setShowValues] = useState<boolean>(true);
+  const [showXTGrid, setShowXTGrid] = useState<boolean>(false);
 
   // Filter links related to the hovered player
   const getLinkColor = (link: PassLink) => {
@@ -85,33 +86,56 @@ export default function PassingNetwork() {
     return Math.max(1, count / 4);
   };
 
+  // Expected Threat 4x3 spatial grid values
+  const XT_GRID = [
+    [0.02, 0.05, 0.12, 0.28],
+    [0.03, 0.08, 0.18, 0.42],
+    [0.02, 0.06, 0.14, 0.31]
+  ];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h4 style={{ margin: 0, fontSize: '15px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Share2 size={16} color="var(--color-green)" />
-          Tactical Passing Network (ARG vs FRA)
+          Tactical Passing Network & Spatial xT Threat Overlay
         </h4>
-        <button 
-          onClick={() => setShowValues(!showValues)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            backgroundColor: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            borderRadius: '6px',
-            padding: '4px 10px',
-            fontSize: '11px',
-            color: 'var(--text-secondary)',
-            cursor: 'pointer',
-            transition: 'all 0.2s'
-          }}
-        >
-          {showValues ? <EyeOff size={12} /> : <Eye size={12} />}
-          {showValues ? "Hide Volume" : "Show Volume"}
-        </button>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button 
+            onClick={() => setShowXTGrid(!showXTGrid)}
+            style={{
+              backgroundColor: showXTGrid ? 'rgba(56, 189, 248, 0.2)' : 'rgba(255,255,255,0.05)',
+              border: '1px solid ' + (showXTGrid ? '#38bdf8' : 'rgba(255,255,255,0.1)'),
+              borderRadius: '6px',
+              padding: '4px 10px',
+              fontSize: '11px',
+              color: showXTGrid ? '#38bdf8' : 'var(--text-secondary)',
+              cursor: 'pointer',
+              transition: 'all 0.2s',
+              fontWeight: 600
+            }}
+          >
+            🎯 {showXTGrid ? "Hide xT Grid" : "Show xT Threat Heatmap"}
+          </button>
+          <button 
+            onClick={() => setShowValues(!showValues)}
+            style={{
+              backgroundColor: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              borderRadius: '6px',
+              padding: '4px 10px',
+              fontSize: '11px',
+              color: 'var(--text-secondary)',
+              cursor: 'pointer',
+              transition: 'all 0.2s'
+            }}
+          >
+            {showValues ? <EyeOff size={12} /> : <Eye size={12} />}
+            {showValues ? "Hide Volume" : "Show Volume"}
+          </button>
+        </div>
       </div>
+
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 240px', gap: '20px', minHeight: '320px' }}>
         
@@ -161,6 +185,48 @@ export default function PassingNetwork() {
                 <stop offset="100%" stopColor="var(--color-green)" />
               </linearGradient>
             </defs>
+
+            {/* Render Expected Threat (xT) Grid if toggled */}
+            {showXTGrid && (
+              <g opacity="0.65">
+                {XT_GRID.map((row, rIdx) =>
+                  row.map((val, cIdx) => {
+                    const widthPct = 25;
+                    const heightPct = 33.33;
+                    const x = cIdx * widthPct;
+                    const y = rIdx * heightPct;
+                    const alpha = Math.min(0.8, val * 1.8);
+                    const color = val > 0.25 ? `rgba(244, 63, 94, ${alpha})` : val > 0.1 ? `rgba(56, 189, 248, ${alpha})` : `rgba(30, 41, 59, ${alpha})`;
+
+                    return (
+                      <g key={`xt-${rIdx}-${cIdx}`}>
+                        <rect
+                          x={`${x}%`}
+                          y={`${y}%`}
+                          width={`${widthPct}%`}
+                          height={`${heightPct}%`}
+                          fill={color}
+                          stroke="rgba(255,255,255,0.1)"
+                          strokeWidth="0.5"
+                        />
+                        <text
+                          x={`${x + widthPct / 2}%`}
+                          y={`${y + heightPct / 2}%`}
+                          fill="#ffffff"
+                          fontSize="10px"
+                          fontWeight="bold"
+                          textAnchor="middle"
+                          alignmentBaseline="middle"
+                        >
+                          xT +{val}
+                        </text>
+                      </g>
+                    );
+                  })
+                )}
+              </g>
+            )}
+
 
             {/* Render Links */}
             {PASS_LINKS.map((link, idx) => {
