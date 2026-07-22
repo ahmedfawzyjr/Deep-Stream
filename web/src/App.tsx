@@ -30,7 +30,12 @@ import { SpatialVisionProView } from './components/SpatialVisionProView';
 import { KalmanVoronoiControlMap } from './components/KalmanVoronoiControlMap';
 import { GRPCTelemetryStreamer } from './components/gRPCTelemetryStreamer';
 import { ComplexMatchGameplay } from './components/ComplexMatchGameplay';
+import { AICoManagerPanel } from './components/AICoManagerPanel';
+import { IoTSmartBallViewer } from './components/IoTSmartBallViewer';
+import { PassingSonarViewer } from './components/PassingSonarViewer';
+import { VARVerdictAudio } from './components/VARVerdictAudio';
 import PassingNetwork from './components/PassingNetwork';
+
 
 
 import AudioVoiceControl from './components/AudioVoiceControl';
@@ -335,6 +340,42 @@ export default function App() {
             🏴󠁧󠁢󠁥󠁮󠁧󠁿 EPL Gameplay
           </button>
           <button 
+            onClick={() => setActiveTab("comanager")}
+            style={{ 
+              background: activeTab === "comanager" ? 'rgba(248, 113, 113, 0.2)' : 'transparent',
+              color: activeTab === "comanager" ? '#f87171' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            🤖 Co-Manager
+          </button>
+          <button 
+            onClick={() => setActiveTab("smartball")}
+            style={{ 
+              background: activeTab === "smartball" ? 'rgba(250, 204, 21, 0.2)' : 'transparent',
+              color: activeTab === "smartball" ? '#facc15' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            ⚽ IoT Smart Ball
+          </button>
+          <button 
+            onClick={() => setActiveTab("sonar")}
+            style={{ 
+              background: activeTab === "sonar" ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
+              color: activeTab === "sonar" ? '#38bdf8' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            🎯 Passing Sonar
+          </button>
+          <button 
+            onClick={() => setActiveTab("varaudio")}
+            style={{ 
+              background: activeTab === "varaudio" ? 'rgba(34, 197, 94, 0.2)' : 'transparent',
+              color: activeTab === "varaudio" ? '#4ade80' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            🔊 VAR Audio
+          </button>
+          <button 
             onClick={() => setActiveTab("bracket")}
             style={{ 
               background: activeTab === "bracket" ? 'rgba(255,255,255,0.08)' : 'transparent',
@@ -345,6 +386,7 @@ export default function App() {
           </button>
         </div>
       </header>
+
 
 
 
@@ -612,7 +654,24 @@ export default function App() {
           <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <ComplexMatchGameplay />
           </div>
+        ) : activeTab === "comanager" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <AICoManagerPanel />
+          </div>
+        ) : activeTab === "smartball" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <IoTSmartBallViewer />
+          </div>
+        ) : activeTab === "sonar" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <PassingSonarViewer />
+          </div>
+        ) : activeTab === "varaudio" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <VARVerdictAudio />
+          </div>
         ) : (
+
 
 
 

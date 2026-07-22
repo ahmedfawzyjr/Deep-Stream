@@ -12,6 +12,8 @@ from services.referee_service import RefereeEvaluationService
 from services.academy_service import AcademyGrowthService
 from services.alphazero_pass import AlphaZeroPassEngine
 from services.stock_market_service import PlayerStockMarketService
+from services.co_manager import AICoManagerService
+from services.epl_database import EPLDatabaseService
 
 app = Flask(__name__)
 genai_engine = GenAIService()
@@ -22,6 +24,9 @@ referee_engine = RefereeEvaluationService()
 academy_engine = AcademyGrowthService()
 alphazero_engine = AlphaZeroPassEngine()
 stock_engine = PlayerStockMarketService()
+comanager_engine = AICoManagerService()
+epl_engine = EPLDatabaseService()
+
 
 @app.route('/health', methods=['GET'])
 def health_check():
@@ -172,8 +177,27 @@ def get_player_stock_ticker():
         'stock_ticker': result
     }), 200
 
+@app.route('/api/v1/tactics/co-manager', methods=['GET'])
+def get_co_manager_advice():
+    minute = int(request.args.get('minute', 68))
+    result = comanager_engine.evaluate_tactical_status(minute)
+    return jsonify({
+        'status': 'success',
+        'co_manager_advice': result
+    }), 200
+
+@app.route('/api/v1/epl/player-radar', methods=['GET'])
+def get_epl_player_radar():
+    player = request.args.get('player', 'Bukayo Saka')
+    result = epl_engine.get_player_radar(player)
+    return jsonify({
+        'status': 'success',
+        'player_radar': result
+    }), 200
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5001, debug=True)
+
 
 
 
