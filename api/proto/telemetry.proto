@@ -1,0 +1,72 @@
+syntax = "proto3";
+
+package deepstream.telemetry.v1;
+
+option go_package = "github.com/ahmedfawzyjr/Deep-Stream/api/internal/pb";
+
+// High-frequency 3D spatial coordinate vector
+alt Vector3D {
+  double x = 1;
+  double y = 2;
+  double z = 3;
+}
+
+// Biomechanical joint strain angles
+message BiomechanicalAngles {
+  double knee_flexion_deg = 1;
+  double valgus_angle_deg = 2;
+  double ground_reaction_force_n = 3;
+  double acl_strain_index = 4;
+}
+
+// Player state telemetry frame
+message PlayerTelemetryFrame {
+  string player_id = 1;
+  int32 squad_number = 2;
+  string team_id = 3;
+  Vector3D position = 4;
+  Vector3D velocity = 5;
+  BiomechanicalAngles biomechanics = 6;
+  double fatigue_index = 7;
+}
+
+// Ball trajectory frame
+message BallTelemetryFrame {
+  Vector3D position = 1;
+  Vector3D velocity = 2;
+  double spin_rpm = 3;
+}
+
+// Sub-millisecond telemetry stream packet
+message SpatialMatchPacket {
+  string match_id = 1;
+  uint64 timestamp_ns = 2;
+  uint32 match_minute = 3;
+  BallTelemetryFrame ball = 4;
+  repeated PlayerTelemetryFrame home_players = 5;
+  repeated PlayerTelemetryFrame away_players = 6;
+  double home_win_probability = 7;
+  double away_win_probability = 8;
+}
+
+// gRPC Binary Stream Service
+service TelemetryStreamingService {
+  rpc StreamLiveTelemetry (MatchStreamRequest) returns (stream SpatialMatchPacket);
+  rpc PushIngestBatch (MatchBatchIngestRequest) returns (IngestResponse);
+}
+
+message MatchStreamRequest {
+  string match_id = 1;
+  uint32 target_fps = 2;
+}
+
+message MatchBatchIngestRequest {
+  string match_id = 1;
+  repeated SpatialMatchPacket packets = 2;
+}
+
+message IngestResponse {
+  bool success = 1;
+  uint32 processed_count = 2;
+  double processing_time_ms = 3;
+}

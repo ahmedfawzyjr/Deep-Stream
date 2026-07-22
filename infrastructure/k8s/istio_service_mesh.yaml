@@ -1,0 +1,87 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: deepstream-gateway
+  namespace: deepstream-system
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "deepstream.sports.ai"
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: SIMPLE
+      credentialName: deepstream-tls-cert
+    hosts:
+    - "deepstream.sports.ai"
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: deepstream-telemetry-vs
+  namespace: deepstream-system
+spec:
+  hosts:
+  - "deepstream.sports.ai"
+  gateways:
+  - deepstream-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /v1/ws
+    route:
+    - destination:
+        host: deepstream-api-service
+        port:
+          number: 8080
+      timeout: 0s # Continuous WebSocket connection
+  - match:
+    - uri:
+        prefix: /api/v1/genai
+    route:
+    - destination:
+        host: deepstream-flask-service
+        port:
+          number: 5001
+
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: deepstream-mtls-rule
+  namespace: deepstream-system
+spec:
+  host: "*.deepstream-system.svc.cluster.local"
+  trafficPolicy:
+    tls:
+      mode: STRICT # Strict mutual TLS
+
+---
+apiVersion: autoscaling/2v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: deepstream-inference-hpa
+  namespace: deepstream-system
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: deepstream-inference
+  minReplicas: 3
+  maxReplicas: 50
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 75

@@ -27,8 +27,12 @@ import { BiomechanicalStressViewer } from './components/BiomechanicalStressViewe
 import { AlphaZeroPassRecommender } from './components/AlphaZeroPassRecommender';
 import { PlayerStockMarket } from './components/PlayerStockMarket';
 import { SpatialVisionProView } from './components/SpatialVisionProView';
+import { KalmanVoronoiControlMap } from './components/KalmanVoronoiControlMap';
+import { GRPCTelemetryStreamer } from './components/gRPCTelemetryStreamer';
 import PassingNetwork from './components/PassingNetwork';
+
 import AudioVoiceControl from './components/AudioVoiceControl';
+
 
 
 
@@ -302,6 +306,24 @@ export default function App() {
             🕶️ Vision Pro Spatial
           </button>
           <button 
+            onClick={() => setActiveTab("voronoi")}
+            style={{ 
+              background: activeTab === "voronoi" ? 'rgba(34, 197, 94, 0.2)' : 'transparent',
+              color: activeTab === "voronoi" ? '#4ade80' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            🧮 Voronoi Control
+          </button>
+          <button 
+            onClick={() => setActiveTab("grpc")}
+            style={{ 
+              background: activeTab === "grpc" ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
+              color: activeTab === "grpc" ? '#38bdf8' : '#9ca3af',
+              border: 'none', padding: '8px 16px', borderRadius: '8px', cursor: 'pointer', fontWeight: 600
+            }}>
+            📡 gRPC Inspector
+          </button>
+          <button 
             onClick={() => setActiveTab("bracket")}
             style={{ 
               background: activeTab === "bracket" ? 'rgba(255,255,255,0.08)' : 'transparent',
@@ -312,6 +334,7 @@ export default function App() {
           </button>
         </div>
       </header>
+
 
 
 
@@ -565,7 +588,17 @@ export default function App() {
           <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
             <SpatialVisionProView />
           </div>
+        ) : activeTab === "voronoi" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <KalmanVoronoiControlMap />
+          </div>
+        ) : activeTab === "grpc" ? (
+          <div style={{ gridColumn: '1 / -1', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            <GRPCTelemetryStreamer />
+          </div>
         ) : (
+
+
 
 
 
